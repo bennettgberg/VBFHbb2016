@@ -158,7 +158,8 @@ def main():
 		for f in fnames['files'].itervalues():
 			if '%s'%S.tag in f['fname']:
 				print S.tag 
-				inf[fi] = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/"+f['fname'],'read')
+		#		inf[fi] = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/"+f['fname'],'read')
+				inf[fi] = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/"+f['fname'],'read')
 				fi += 1
  ## Canvas definition
 		canZ = TCanvas("canZ_sel%s"%S.tag,"canZ_sel%s"%S.label,900,600)

@@ -129,6 +129,7 @@ def main():
 	SC = opts.SC if not type(opts.SC)==str else SELsetup(opts.SC)
 	TF = opts.TF
 	TFinfo = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath))
+	print("TFinfo: %s/vbfHbb_transfer_2016_run2_linear.json"%basepath)
 
 # New histograms, graphs, containers
 	CN1 = TCanvas("c2","c2",900,900)
@@ -171,7 +172,7 @@ def main():
 		line.GetYaxis().SetTitle("Signal / Control")
 		line.GetYaxis().SetTitleOffset(1.35)
 ## Load trees
-		fin = TFile.Open("/afs/cern.ch/work/l/lata/VBF_Analysis/CMSSW_7_4_7/src/VBFHbb2016/VBF_combine/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_%s_trignone_v25_VBF_newReg.root"%(str.lower(S.tag)),"read")
+		fin = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_%s_trignone_v25_VBF_newReg.root"%(str.lower(S.tag)),"read")
 		T = fin.Get("VBF/events")
 ## Make canvas
 		CN = TCanvas("c_sel%s"%S.tag,"c_sel%s"%S.tag,900*(S.ncat-1),900)

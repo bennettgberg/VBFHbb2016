@@ -1135,7 +1135,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 		brn_names = []
 		for p in xrange(n_param):   
 		#	nb = "b%d_%s_CAT0"%(p,pdf_name)
-			nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
+			#nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num) #BG comment
+			nb = "b%d_Pol6_CAT%d"%(p,cat_num)
 		#	nb = "b%d_%s_CAT%d"%(p,pdf_name,cat_num)
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,0.32,0,10.)
@@ -1171,7 +1172,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 		brn_names = []
 		for p in xrange(n_param):   
 		#	nb = "b%d_%s_CAT0"%(p,pdf_name)
-			nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
+	#		nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
+			nb = "b%d_Pol8_CAT%d"%(p,cat_num)  #BG change
 		#	nb = "b%d_%s_CAT%d"%(p,pdf_name,cat_num)
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,3.54,0,10.)

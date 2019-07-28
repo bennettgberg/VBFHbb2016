@@ -222,7 +222,8 @@ def main():
 		ftyp = re.search('.*(VBF|GluGlu)HToBB.*',f).group(1)
 		if not mass in inf: inf[mass] = {}
 		if not styp in inf[mass]: inf[mass][styp] = {}
-		inf[mass][styp][ftyp] = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/"+f,'read')
+		#inf[mass][styp][ftyp] = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/"+f,'read')
+		inf[mass][styp][ftyp] = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/"+f,'read')
 #	for k,v in inf.iteritems():
 #		for k1,v1 in v.iteritems():
 #			for k2,v2 in v1.iteritems():

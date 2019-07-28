@@ -171,7 +171,8 @@ def main():
 		line.GetYaxis().SetTitle("Signal / Control")
 		line.GetYaxis().SetTitleOffset(1.35)
 ## Load trees
-		fin = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/FitVBF_BTagCSV_analysis_%s_trignone_v25_VBF_newReg.root"%(str.lower(S.tag)),"read")
+		#fin = TFile.Open("/afs/cern.ch/work/n/nchernya/VBFHbb_2016/VBF_combine/inputs/root/FitVBF_BTagCSV_analysis_%s_trignone_v25_VBF_newReg.root"%(str.lower(S.tag)),"read")
+		fin = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_%s_trignone_v25_VBF_newReg.root"%(str.lower(S.tag)),"read")
 		T = fin.Get("VBF/events")
 ## Make canvas
 		CN = TCanvas("c_sel%s"%S.tag,"c_sel%s"%S.tag,900*(S.ncat-1),900)

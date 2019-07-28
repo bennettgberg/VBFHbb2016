@@ -43,7 +43,7 @@ def parser(mp=None):
 	mg2.add_option('--bounds',help=colours[5]+'Template boundaries: 80,200 (min,max)'+colours[0],default=[80.,200.],type='str',action='callback',callback=optsplitfloat,dest='X')
 	mg2.add_option('--binwidth',help=colours[5]+'Template bin width: 0.1,0.1 (Single,Double)'+colours[0],default=[0.1,0.1],type='str',action='callback',callback=optsplitfloat,dest='dX')
 	mg2.add_option('--lumi',help=colours[5]+'Luminosity: 35900'+colours[0],default=[35900,35900.],type='str',action='callback',callback=optsplitfloat,dest='LUMI')
-	mg2.add_option('--TF',help=colours[5]+'Transfer function label: POL1,POL1 '+colours[0],default=['POL1','POL1'],type='str',action='callback',callback=optsplit)
+#	mg2.add_option('--TF',help=colours[5]+'Transfer function label: POL1,POL1 '+colours[0],default=['POL1','POL1'],type='str',action='callback',callback=optsplit) #BG comment
 	mg2.add_option('--BRN',help=colours[5]+'Bernstein order: 5,5'+colours[0],default=[5,5],type='str',action='callback',callback=optsplitint)
 	mg2.add_option('--MASS',help=colours[5]+'Signal masspoint: 125'+colours[0],default=125,type='int')
 	mg2.add_option('--forfit',help=colours[5]+'Freeze/free parameters for fit or not (for toys)'+colours[0],default=True,action='store_false')
@@ -123,14 +123,16 @@ def main():
 	makeDirs('%s/plot'%opts.workdir)
 	makeDirs('%s/root'%opts.workdir)
 	longtag1 = "_B%d-%d"%(opts.X[0],opts.X[1])
-	longtag2 = "_B%d-%d_TF%s-%s"%(opts.X[0],opts.X[1],opts.TF[0],opts.TF[1])
-	longtag3 = "_B%d-%d_BRN%d-%d_TF%s-%s"%(opts.X[0],opts.X[1],opts.BRN[0],opts.BRN[1],opts.TF[0],opts.TF[1])
+	#longtag2 = "_B%d-%d_TF%s-%s"%(opts.X[0],opts.X[1],opts.TF[0],opts.TF[1])
+	longtag2 = "_B%d-%d"%(opts.X[0],opts.X[1]) #BG change
+	#longtag3 = "_B%d-%d_BRN%d-%d_TF%s-%s"%(opts.X[0],opts.X[1],opts.BRN[0],opts.BRN[1],opts.TF[0],opts.TF[1]) #BG comment
+	longtag3 = "_B%d-%d_BRN%d-%d"%(opts.X[0],opts.X[1],opts.BRN[0],opts.BRN[1]) #BG change
 	
 # Setup
 	SC = opts.SC if not type(opts.SC)==str else SELsetup(opts.SC)
 	#fTF = json.loads(filecontent("%s/vbfHbb_transfer_2014.json"%basepath))
 	#fTF = json.loads(filecontent("%s/vbfHbb_transfer_2015_run2.json"%basepath))
-	fTF = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath))
+#	fTF = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath)) #BG comment
 	LUMI = opts.LUMI
 	NBINS = [int((opts.X[1]-opts.X[0])/x) for x in opts.dX]	
 	MASS = opts.MASS
@@ -138,7 +140,7 @@ def main():
 # Files
 	fBKG = TFile.Open("%s/root/bkg_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag1),"read")
 	fSIG = TFile.Open("%s/root/sig_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag1),"read")
-	fTRF = TFile.Open("%s/root/TransferFunctions%s.root"%(opts.workdir,"" if not opts.long else longtag2),"read")
+#	fTRF = TFile.Open("%s/root/TransferFunctions%s.root"%(opts.workdir,"" if not opts.long else longtag2),"read") #BG comment
 	wBKG = fBKG.Get("w")
 	wSIG = fSIG.Get("w")
 	w    = RooWorkspace("w","workspace")
@@ -183,7 +185,7 @@ def main():
 		qcd_pdf_aux2 = {}
 		model        = {}
 		nQCD         = {}
-		transfer     = {}
+		#transfer     = {} #BG comment
 		zPDF,tPDF,qPDF,sPDF = {},{},{},{}
 		yZ,yT,yQ     = {},{},{}
 		can = TCanvas("canD_sel%s"%S.tag,"canD_sel%s"%S.tag,900,750)
@@ -212,29 +214,29 @@ def main():
   			x = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,opts.X[0],opts.X[1])
 			trans_p = {}
   ## Transfer functions			
-			if not C==0:
-				ftf = fTRF.Get("fRat_sel%s_CAT%d"%(S.label,Cp))
-				print("%s/root/TransferFunctions%s.root"%(opts.workdir,"" if not opts.long else longtag2),"read")
-				print("var name: fRat_sel%s_CAT%d"%(S.label,Cp)) 
-				npar = ftf.GetNpar()
-  ### TF Parameters
-				ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
-				conspol = 1.0/ftf.GetParameter(0)
-				for ip in range(npar):
-					if not ntf in trans_p: trans_p[ntf] = []
-					trans_p[ntf] += [RooRealVar(ntf+"_p%d"%ip,ntf+"_p%d"%ip,ftf.GetParameter(ip)*conspol,-0.1,0.1)]
-					if 'Fix' in opts.TF[iS]:
-						trans_p[ntf][-1].setError(fTF[opts.TF[iS]]['scale'][Cp]*ftf.GetParError(ip)*conspol)
-					else:
-						trans_p[ntf][-1].setError(ftf.GetParError(ip)*conspol)
-					trans_p[ntf][-1].setConstant(kTRUE)
-  ### TF Functions
-				rl = RooArgList(x)
-				for ti,t in enumerate(trans_p[ntf]): 
-					if ti==0 and fTF[opts.TF[iS]]['f'][-3:]=="+ 1": continue
-					rl.add(t)
-				ntf = "transfer_%s_CAT%d"%(opts.TF[iS],Cp)
-  				transfer[ntf] = RooGenericPdf(ntf,fTF[opts.TF[iS]]['f'],rl)
+		#	if not C==0: #BG comments (whole block)
+		#		ftf = fTRF.Get("fRat_sel%s_CAT%d"%(S.label,Cp))
+		#		print("%s/root/TransferFunctions%s.root"%(opts.workdir,"" if not opts.long else longtag2),"read")
+		#		print("var name: fRat_sel%s_CAT%d"%(S.label,Cp)) 
+		#		npar = ftf.GetNpar()
+  ### TF Paramet#ers
+		#		ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
+		#		conspol = 1.0/ftf.GetParameter(0)
+		#		for ip in range(npar):
+		#			if not ntf in trans_p: trans_p[ntf] = []
+		#			trans_p[ntf] += [RooRealVar(ntf+"_p%d"%ip,ntf+"_p%d"%ip,ftf.GetParameter(ip)*conspol,-0.1,0.1)]
+		#			if 'Fix' in opts.TF[iS]:
+		#				trans_p[ntf][-1].setError(fTF[opts.TF[iS]]['scale'][Cp]*ftf.GetParError(ip)*conspol)
+		#			else:
+		#				trans_p[ntf][-1].setError(ftf.GetParError(ip)*conspol)
+#					trans_p[ntf][-1].setConstant(kTRUE)
+#  ### TF Functions #BG comments (whole block)
+#				rl = RooArgList(x)
+#				for ti,t in enumerate(trans_p[ntf]): 
+#					if ti==0 and fTF[opts.TF[iS]]['f'][-3:]=="+ 1": continue
+#					rl.add(t)
+#				ntf = "transfer_%s_CAT%d"%(opts.TF[iS],Cp)
+#  				transfer[ntf] = RooGenericPdf(ntf,fTF[opts.TF[iS]]['f'],rl)
 
   ### QCD part
 	  ### Containers
@@ -264,16 +266,19 @@ def main():
 				for ib in range(opts.BRN[iS]+1):
 					nb = "b%d_sel%s_CAT%d"%(ib,S.tag,Cp)
 					brn[nb].setConstant(kFALSE)
-				qcd_pdf_aux[N] = RooBernstein("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),x,brn_params[N])
+				#qcd_pdf_aux[N] = RooBernstein("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),x,brn_params[N]) #BG comment
+				qcd_pdf_aux[N] = RooBernstein("qcd_model_CAT%d"%(Cp),"qcd_model_CAT%d"%(Cp),x,brn_params[N]) #BG change
 				qcd_pdf[N]     = qcd_pdf_aux[N]#RooAbsPdf(qcd_pdf_aux[N])
 	  ### Bernstein * TFs other CATs
 			else:
 				for ib in range(opts.BRN[iS]+1):
 					nb = "b%d_sel%s_CAT%d"%(ib,S.tag,sum(SC.ncats[0:iS]))
 					brn[nb].setConstant(kTRUE)
-				qcd_pdf_aux[N]  = RooBernstein("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),x,brn_params["sel%s_CAT%d"%(S.tag,sum(SC.ncats[0:iS]))])
-				qcd_pdf_aux2[N] = RooProdPdf("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),RooArgList(transfer["transfer_%s_CAT%d"%(opts.TF[iS],Cp)],qcd_pdf_aux[N]))
-				qcd_pdf[N]      = qcd_pdf_aux2[N] #RooAbsPdf(qcd_pdf_aux2[N])
+				#qcd_pdf_aux[N]  = RooBernstein("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),x,brn_params["sel%s_CAT%d"%(S.tag,sum(SC.ncats[0:iS]))]) #BG comment
+				qcd_pdf_aux[N]  = RooBernstein("qcd_model_aux_CAT%d"%(Cp),"qcd_model_aux_CAT%d"%(Cp),x,brn_params["sel%s_CAT%d"%(S.tag,sum(SC.ncats[0:iS]))]) #BG change
+#				qcd_pdf_aux2[N] = RooProdPdf("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),RooArgList(transfer["transfer_%s_CAT%d"%(opts.TF[iS],Cp)],qcd_pdf_aux[N])) #BG comment
+				#qcd_pdf[N]      = qcd_pdf_aux2[N] #RooAbsPdf(qcd_pdf_aux2[N]) #BG comment
+				qcd_pdf[N]      = qcd_pdf_aux[N] #RooAbsPdf(qcd_pdf_aux2[N]) #BG change
 				if opts.verbosity>0 and not opts.quiet: qcd_pdf[N].Print()
 
 	  ### PDFs
@@ -292,7 +297,8 @@ def main():
 #			yS    = RooRealVar("yield_signal_mass%d_CAT%d"%(MASS,Cp),"yield_signal_mass%d_CAT%d"%(MASS,Cp),ySVBF.getValV()+ySGF.getValV(),0.,400.)
 
   ### Combined model
-	  		model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),"bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
+	  		#model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),"bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N])) #BG comment
+	  		model[N] = RooAddPdf("bkg_model_CAT%d"%(Cp),"bkg_model_CAT%d"%(Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N])) #BG change
 			
   ### Fit
 	  		res   = model[N].fitTo(rh[N],RooFit.Save())
@@ -309,9 +315,9 @@ def main():
 				if C==0:
 					nb = "b%d_sel%s_CAT%d"%(ib,S.tag,Cp)
 					brn[nb].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed
-			if not C==0:
-				ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
-				for t in trans_p[ntf]: t.setConstant(kFALSE if opts.forfit else (kFALSE if not 'Fix' in opts.TF[iS] else kTRUE)) ## false for final fit, true if fixed
+#			if not C==0: #BG comments (whole block)
+#				ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
+#				for t in trans_p[ntf]: t.setConstant(kFALSE if opts.forfit else (kFALSE if not 'Fix' in opts.TF[iS] else kTRUE)) ## false for final fit, true if fixed
 			
   ### Saving
 			for o in [rh[N],rhb[N],model[N],Y[N]]:
@@ -331,7 +337,7 @@ def main():
 #
 
 	makeDirs("%s/root/"%opts.workdir)
-	w.writeToFile("%s/root/data_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag3))
+	w.writeToFile("%s/root/data_shapes_workspace_BG_%s.root"%(opts.workdir,"" if not opts.long else longtag3))
 	print "Done."
 
 ####################################################################################################
