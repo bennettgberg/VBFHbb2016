@@ -122,7 +122,7 @@ def main():
 		if not jmass in MASS: continue
 		if opts.bias :
 	#		fout = open("%s/%s/datacard_vbfHbb_combo_bias%s_m%d%s%s.txt"%(opts.workdir,prefix,opts.function,jmass,"" if CATS==range(7) else "_CAT%d-CAT%d_CATveto%s"%(opts.CATS[0],opts.CATS[1],"".join(["%d"%x for x in opts.CATveto])),"" if not opts.long else longtag3),"w+")
-			fout = open("%s/%s/datacard_vbfHbb_bias%s_m%d%s%s.txt"%(opts.workdir,prefix,opts.function,jmass,"" if CATS==range(7) else "_CAT%d-CAT%d_CATveto%s"%(opts.CATS[0],opts.CATS[1],"".join(["%d"%x for x in opts.CATveto])),"" if not opts.long else longtag3),"w+")
+			fout = open("%s/%s/datacard_CAT%d%s_%s_bias.txt"%(opts.workdir,prefix,opts.CATS[0], str(opts.CATS[1]) if opts.CATS[0] != opts.CATS[1] else "", opts.function),"w+") #BG change
 			fout_table = open("%s/%s/table_bias%s.txt"%(opts.workdir,prefix,opts.function),"w+")
 		if not opts.bias :
 	#		fout = open("%s/%s/datacard_vbfHbb_combo_m%d%s%s.txt"%(opts.workdir,prefix,jmass,"" if CATS==range(7) else "_CAT%d-CAT%d_CATveto%s"%(opts.CATS[0],opts.CATS[1],"".join(["%d"%x for x in opts.CATveto])),"" if not opts.long else longtag3),"w+")
@@ -133,13 +133,15 @@ def main():
 		fout.write("jmax *\nkmax *\n")
 		fout.write("-"*100+"\n")
 		fname = os.path.split(fDAT.GetName())[1]
-		fname_bias = "bias_shapes_workspace_%s.root"%opts.function;
+		#fname_bias = "bias_shapes_workspace_%s.root"%opts.function;
+		fname_bias = "bias_shapes_workspace_BG_%s.root"%opts.function; #BG change
 		sfname = os.path.split(fSIG.GetName())[1]
 		qcdname = "bias_shapes_workspace_" + opts.function + ".root" #BG change
  ## files
 		if opts.bias : 
 			fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","data_obs","../root",fname,"w:data_hist_$CHANNEL"))
-                        fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%(''.join(opts.TF))))
+#                        fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%(''.join(opts.TF))))
+                        fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_aux_$CHANNEL")) #BG change
                         fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","top     ","../root",fname,"w:Top_model_$CHANNEL"))
                         fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","zjets   ","../root",fname,"w:Z_model_$CHANNEL"))
                         fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qqH_hbb     ","../root",sfname,"w:signal_model_m%s_$CHANNEL"%jmass))

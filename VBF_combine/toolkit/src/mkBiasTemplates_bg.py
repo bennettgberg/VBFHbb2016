@@ -339,7 +339,8 @@ def main():
 #			#print "h_data_integral=%.3f"%(h_data.Integral())
   ### Model
 			print Cp
-			if Cp==0 or Cp==4:
+			if Cp==0 or Cp==4: 
+#			if 1 == 0: #BG change, don't want this name
 				if Cp==4 :  gcs_aux[:]=[]
 				[qcd_pdf[N],params[N]] = generate_pdf(x, pdf_name=opts.function,x_name=x_name,selection=S.tag,gcs=gcs_aux) 
 				if qcd_pdf[N] == None : return -1
@@ -428,7 +429,7 @@ def main():
 	#				brn[nb].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed
 			for ib in range(n_param): 
 				if C==0 :
-					gcs_aux[ib].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed)
+					gcs_aux[ib].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed) 
 #			if not C==0 :                                                   #BG comments (this whole block)
 #				ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
 #				for t in trans_p[ntf]: t.setConstant(kFALSE if opts.forfit else (kFALSE if not 'Fix' in opts.TF[iS] else kTRUE)) ## false for final fit, true if fixed
