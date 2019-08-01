@@ -1081,7 +1081,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 		brn_names = []
 		for p in xrange(n_param):   
 		#	nb = "b%d_%s_CAT%d"%(p,pdf_name,cat_num)
-			nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
+	#		nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
+			nb = "b%d_Pol3_CAT%d"%(p,cat_num) #BG change
 			brn_names.append(nb)
 			pmin = Parameters[pdf_name][nb]
 		#	brn[nb] = RooRealVar(nb,nb,0.48,0,10.)
@@ -1125,7 +1126,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			print "test",coeff
 			gcs.append(brn[nb])
 #		name = "qcd_model_"+pdf_name+"_CAT0"
-		name = "qcd_model_POL4POL3_CAT%d"%cat_num
+		#name = "qcd_model_POL4POL3_CAT%d"%cat_num
+		name = "qcd_model_ConstPol1ConstPol1_CAT%d"%cat_num
 #		name = "qcd_model_"+pdf_name+"_CAT%d"%cat_num
 		pdf = ROOT.RooBernstein(name,"",x,coeff )
                 print brn, brn_names

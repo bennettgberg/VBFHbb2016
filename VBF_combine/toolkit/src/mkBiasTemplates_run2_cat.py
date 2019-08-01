@@ -130,10 +130,29 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
 	chi2=chi2_val/ndf
 	prob = ROOT.TMath.Prob(chi2_val,ndf)
 	print ndf
-	print chi2_val
-	print chi2
-	print prob
-	print "this is  what I want...."	
+#Start BG changes
+	if C == 0:
+		if opts.function == "Pol2":
+			lett = "w"
+		else:
+			lett = "a"
+		ndffile = open("ndfout.txt", lett)
+		ndffile.write(str(ndf) + "\n")
+		print chi2_val
+		print chi2
+		chi2file = open("chi2out.txt", lett)
+		chi2file.write(str(chi2_val) + "\n")
+		print prob
+		probfile = open("probfile.txt", lett)
+		probfile.write(str(prob) + "\n")
+		ndfochi2file = open("ndfochi2.txt", lett)
+		ndfochi2file.write(str(chi2) + "\n")
+		print "this is  what I want...."	
+		ndffile.close()
+		chi2file.close()
+		probfile.close()
+		ndfochi2file.close()
+#end BG changes
 	
 # part 2
 	pad = TPad("pad","pad",0.,0.,1.,1.)
