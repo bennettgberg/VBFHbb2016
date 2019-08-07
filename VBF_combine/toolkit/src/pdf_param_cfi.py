@@ -3,7 +3,8 @@
 Nparam = {
 ########  exp
 'expPol1' : 1,
-'exp_pol2':2,
+#'exp_pol2':2,#BG comment bc wtf
+'expPol2':2,
 'expPol3':3,
 'expPol4':4,
 'expPol5':5,
@@ -110,7 +111,8 @@ Parameters = {
         'b0_selsingle_CAT4' : [0,1],
 },
 
-'exp_pol2' : {
+#'exp_pol2' : { #BG comment bc wtf
+'expPol2': {
 	'b0_seldouble_CAT0' : [-5,5],
 	'b1_seldouble_CAT0' : [-5,5],
         'b0_selsingle_CAT4' : [-5,5],
