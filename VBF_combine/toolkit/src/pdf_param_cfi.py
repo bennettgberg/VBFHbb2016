@@ -897,6 +897,16 @@ Parameters = {
 	'b4_erfPol3_CAT0' : [3.48e-03,7.48e-03],
 },
 
+#BG added--why was Pol2 not here before??
+'Pol2' : {
+'b0_Pol3_CAT0' : 1.17123, 
+'b1_Pol3_CAT0' : 0.689743,  
+'b2_Pol3_CAT0' : 0.453177, 
+'b0_Pol3_CAT4' : 1.44345, 
+'b1_Pol3_CAT4' : 0.915609,  
+'b2_Pol3_CAT4' : 0.486283,  
+},
+
 'Pol3' : {
 'b0_Pol3_CAT0' : 1.17123, 
 'b1_Pol3_CAT0' : 0.689743,  

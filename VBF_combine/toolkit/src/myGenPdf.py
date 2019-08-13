@@ -14,10 +14,9 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 	cat_num=0
 	if selection=="double" : cat_num=0
 	if selection=="single" : cat_num=4
-        if pdf_name in Parameters:
-		name = "qcd_model_%s_CAT%d"%(pdf_name, real_cat)
-        else:
+        if not pdf_name in Parameters:
                 sys.exit("Error: pdf name %s is not recognized."%pdf_name)
+        name = "qcd_model_%s_CAT%d"%(pdf_name, real_cat)
 	if pdf_name=="expPow":            
 		coeff.removeAll()
 		brn = {}
@@ -971,10 +970,11 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 		#	nb = "b%d_%s_CAT0"%(p,pdf_name)
 			nb = "b%d_sel%s_CAT%d"%(p,selection,cat_num)
 			brn_names.append(nb)
-			brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
+			#brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
+			brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 	if pdf_name=="Pol3":            
 		coeff.removeAll()
 		brn = {}
@@ -986,10 +986,10 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			brn_names.append(nb)
 			pmin = Parameters[pdf_name][nb]
 		#	brn[nb] = RooRealVar(nb,nb,0.48,0,10.)
-			brn[nb] = RooRealVar(nb,nb,pmin,10)
+			brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 	if pdf_name=="Pol4":            
 		coeff.removeAll()
 		brn = {}
@@ -1001,10 +1001,10 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,0.38,0,10.)
 			pmin = Parameters[pdf_name][nb]
-			brn[nb] = RooRealVar(nb,nb,pmin,10)
+			brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 	if pdf_name=="Pol5":            
 		coeff.removeAll()
 		brn = {}
@@ -1015,12 +1015,15 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 		#	nb = "b%d_%s_CAT%d"%(p,pdf_name,cat_num)
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
-			pmin = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,10)
+			pmin = 0#Parameters[pdf_name][nb]
+                        brn[nb] = RooRealVar(nb,nb,-1,1) #BG changed 10->1
 			coeff.add(brn[nb])
 			print "test",coeff
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		#pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
+		#pdf = ROOT.RooBernstein(name,"",(x-80.0)/120.0,coeff )
+#(x-min)/(mass-min) so range b.t. 0 and 1
                 print brn, brn_names
 	if pdf_name=="Pol6":            
 		coeff.removeAll()
@@ -1034,10 +1037,11 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,0.32,0,10.)
 			pmin = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 	if pdf_name=="Pol7":            
 		coeff.removeAll()
 		brn = {}
@@ -1049,10 +1053,11 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,0.30,0,10.)
 			pmin = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 	if pdf_name=="Pol8":            
 		coeff.removeAll()
 		brn = {}
@@ -1065,10 +1070,11 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
 			brn_names.append(nb)
 		#	brn[nb] = RooRealVar(nb,nb,3.54,0,10.)
 			pmin = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,10)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
 			coeff.add(brn[nb])
 			gcs.append(brn[nb])
-		pdf = ROOT.RooBernstein(name,"",x,coeff )
+		pdf = ROOT.RooChebychev(name,"",x,coeff )
 
 
 	pdf.Print()

@@ -134,7 +134,8 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
 #Start BG changes
  #print stats to output files (separated by type of stat AND category)
    # if opts.function == "Pol2":
-    if "1" in opts.function:
+    homedir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/"
+    if "2" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
         lett = "w"
         print("Overwriting files starting with function %s."%opts.function)
     else:
@@ -143,14 +144,14 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
     if iS == 1:
         category += 4
     print("printing stats for category " + str(category))
-    ndoffile = open("ndof_" + str(category) + ".txt", lett)
+    ndoffile = open(homedir + "ndof_" + str(category) + ".txt", lett)
     ndoffile.write(str(ndf) + "\n")
-    chi2file = open("chi2_" + str(category) + ".txt", lett)
+    chi2file = open(homedir + "chi2_" + str(category) + ".txt", lett)
     chi2file.write(str(chi2_val) + "\n")
-    probfile = open("prob_" + str(category) + ".txt", lett)
+    probfile = open(homedir + "prob_" + str(category) + ".txt", lett)
     probfile.write(str(prob) + "\n")
     #reduced chi2
-    rechfile = open("rech_" + str(category) + ".txt", lett)
+    rechfile = open(homedir + "rech_" + str(category) + ".txt", lett)
     rechfile.write(str(chi2) + "\n")
     ndoffile.close()
     chi2file.close()
@@ -300,8 +301,9 @@ def main():
 #                brn_params[nbp].add(brn[nb])
   ## x
             x = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,opts.X[0],opts.X[1])
+            #x = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,0.0,1.0)
             x_name="mbbReg_CAT%d"%Cp
-            print x 
+            print("******************** opts.X[0] = %s, opts.X[1] = %s *****************************"%(str(opts.X[0]), str(opts.X[1]))) 
             print "test"
             print x_name
             trans_p = {}
