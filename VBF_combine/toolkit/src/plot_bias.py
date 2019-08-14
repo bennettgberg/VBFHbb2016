@@ -24,15 +24,15 @@ rErr = [0.0 for x in range(totntoys)]
 tbmin = 50
 tbmax = 400
 #how many bins in the histogram
-nbins = 80
+nbins = 100
 #name of generating model
-gen_func = "Pol4"
+gen_func = "Pol3"
 #prefix of .out files (before number)
-fit_func = "Pol4"
+fit_func = "Pol3"
 #starting category
-catstart = 0
+catstart = 1
 #ending category
-catend = 0
+catend = 1
 #Expected mean
 mu = "1"
 if len(sys.argv) % 2 != 1 and len(sys.argv) != 2:
@@ -64,7 +64,7 @@ while i < len(sys.argv)-1 or len(sys.argv) == 2:
       print("Usage: ./make_scripts.py [option] [value] [option] [value]...")
       sys.exit(0)
   i += 2
-hist_all = ROOT.TH1F("hist_all","",nbins,-4,4)
+hist_all = ROOT.TH1F("hist_all","",nbins,-5,5)
 #hist_all = ROOT.TH1F("hist_all","",nbins,0,20)
 #hist_all = ROOT.TH2D("hist_all","",nbins,-40,40, 100, 10, 20)
 canv = ROOT.TCanvas("canv","canv",900,900)
@@ -195,12 +195,12 @@ for i in range(nevents):
 #  if not rErr[i] > 12:
 #    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
 #    continue
-#  if str(pull) in pulls and pulls[str(pull)] > 5:
-#    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
-#    continue
-#  if not str(pull) in pulls:
-#    pulls[str(pull)] = 0
-#  pulls[str(pull)] += 1
+  if str(pull) in pulls: # and pulls[str(pull)] > 5:
+    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
+    continue
+  if not str(pull) in pulls:
+    pulls[str(pull)] = 0
+  pulls[str(pull)] += 1
   real_nevents += 1
   mu_inj_avg += r[i]
   hist_all.Fill((r[i]-1.0)/rErr[i])
@@ -269,6 +269,6 @@ hist_all.Draw()
 print("Average mu_inj = %f" %mu_inj_avg)
 #make display not immediately close
 s = raw_input("Hit enter to exit.")
-#c.SaveAs("plot_inj1_%s_%s.pdf"%(toy_func,fit_func))
+#canv.SaveAs("cat%d_%s_%s_nore.pdf"%(catstart, gen_func, fit_func))
 #canv.SaveAs("plots/plot_inj%s_%s_cat%s.pdf"%(mu,fit_funcs[0],cat
 #canv.SaveAs("plot_inj%s_%s_cat%s.pdf"%(mu,fit_funcs[0],cat))

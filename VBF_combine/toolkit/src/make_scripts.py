@@ -168,7 +168,7 @@ def main():
                        #mv the files from this call to eos.
                         jobfile.write("mv higgsCombine_%d.GenerateOnly.mH120.%d.root %s\n"%(job, seed, newdir))
                         jobfile.write("mv higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root %s\n"%(job, c, seedf, newdir))
-                        jobfile.write("mv fitDiagnostics_%d_%d.root %s\n"%(job, seedf, newdir))
+                        jobfile.write("mv fitDiagnostics_%d_%d.root %s\n"%(job, c, newdir))
                 #Now move everything to eos (so afs storage space doesn't run out).
 #                jobfile.write("mv fitDiagnostics_" + str(job) + "_* " + newdir + "\n")
 #                jobfile.write("mv higgsCombine_" + str(job) + "_* " + newdir + "\n")
