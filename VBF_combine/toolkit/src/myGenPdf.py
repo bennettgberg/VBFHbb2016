@@ -64,7 +64,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #	brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -83,7 +84,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -102,7 +104,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -121,7 +124,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -140,7 +144,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -159,7 +164,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -178,7 +184,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'
@@ -197,7 +204,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                         brn_names.append(nb)
                 #       brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
                         [pmin,pmax] = Parameters[pdf_name][nb]
-                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        #brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        brn[nb] = RooRealVar(nb,nb,-1,1)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
                         const30 = '30'

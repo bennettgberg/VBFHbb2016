@@ -7,10 +7,10 @@ eval `scramv1 runtime -sh`
 #./mkSigTemplates_run2_cat.py --workdir=test2_for_bennett
 #./mkBkgTemplates_run2_cat.py --workdir=test2_for_bennett  
 #./mkDataTemplates_run2_cat.py --workdir=test2_for_bennett --TF ConstPOL1,ConstPOL1
-for i in $(seq 2 6)
+for i in $(seq 1 8)
 do
-  echo "Running Pol$i"
+  echo "Running expPol$i"
 #  ./myBiasTemplates.py --workdir test_for_bennett --function Pol$i --TF ConstPOL1,ConstPOL1 
-  ./myBiasTemplates.py --workdir test2_for_bennett --function Pol$i --TF ConstPOL1,ConstPOL1 
+  ./myBiasTemplates.py --workdir test2_for_bennett --function expPol$i --TF ConstPOL1,ConstPOL1 
 done
 python FTest.py

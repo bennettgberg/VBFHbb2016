@@ -135,7 +135,7 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
  #print stats to output files (separated by type of stat AND category)
    # if opts.function == "Pol2":
     homedir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/"
-    if "2" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
+    if "1" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
         lett = "w"
         print("Overwriting files starting with function %s."%opts.function)
     else:
