@@ -10,7 +10,8 @@ eval `scramv1 runtime -sh`
 for i in $(seq 1 8)
 do
   echo "Running expPol$i"
-#  ./myBiasTemplates.py --workdir test_for_bennett --function Pol$i --TF ConstPOL1,ConstPOL1 
-  ./myBiasTemplates.py --workdir test2_for_bennett --function expPol$i --TF ConstPOL1,ConstPOL1 
+  ./myBiasTemplates.py --workdir test_for_bennett --function expPol$i --TF ConstPOL1,ConstPOL1 
+  #./myBiasTemplates.py --workdir test2_for_bennett --function expx$i --TF ConstPOL1,ConstPOL1 
+#  ./myBiasTemplates.py --workdir test2_for_bennett --function sine$i --TF ConstPOL1,ConstPOL1 
 done
 python FTest.py

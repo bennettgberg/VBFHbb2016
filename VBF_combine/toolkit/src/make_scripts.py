@@ -26,6 +26,8 @@ def main():
         flavour = "microcentury" #"longlunch"
         #verbosity for combine calls
         verbosity = 0
+        #directory to find datacards and .root files for input to combine.
+        workdir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"
 #        flavour = "workday"  
 #parse input arguments to see if any default values are being replaced
         #only -h or --help is a valid option without a value after it
@@ -57,6 +59,13 @@ def main():
                                 seed_params[j] = int(params[j])
                 elif sys.argv[i] == "--verbosity" or sys.argv[i] == "-v":
                         verbosity = int(sys.argv[i+1])
+                elif sys.argv[i] == "--workdir" or sys.argv[i] == "-w":
+                        workdir = sys.argv[i+1]
+                        if not os.path.exists(workdir):
+                            sys.exit("Error! %s does not exist."%workdir)
+                        #if user includes a / at the end, remove it. We will add it ourselves.
+                        if workdir[len(workdir)-1] == "/":
+                            workdir = workdir[:-1]
                 else:
                         if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
                                 print("Error! Unrecognized option %s." %sys.argv[i])
@@ -74,27 +83,28 @@ def main():
         print("Generating function = %s, fitting function = %s" %(gen_func, fit_func))
         print("Categories %d - %d" %(catstart, catend))
         print("Random seed parameters: " + str(seed_params))
+        print("workdir: %s" %(workdir))
         #datacard to generate toys based on
-        gen_datacard = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(gen_func, catstart, catend)
+        gen_datacard = "%s/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(workdir, gen_func, catstart, catend)
         #gencard is just the name without the path.
         gencard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(gen_func, catstart, catend)
         #if the generating datacard doesn't exist yet, make it.
         if not os.path.exists(gen_datacard):
-                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"%(catstart, catend, gen_func))
+                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(catstart, catend, gen_func, workdir))
         #datacard to fit toys based on
-        fit_datacard = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(fit_func, catstart, catend)
+        fit_datacard = "%s/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(workdir, fit_func, catstart, catend)
         #fitcard is just the name without the path.
         fitcard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(fit_func, catstart, catend)
         #make sure the model exists also.
-        if not os.path.exists("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/bias_shapes_workspace_%s.root" %(gen_func)):
+        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, gen_func)):
                 #generate the bias template.
-                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"%(gen_func))
-        if not os.path.exists("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/bias_shapes_workspace_%s.root" %(fit_func)):
+                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(gen_func, workdir))
+        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, fit_func)):
                 #generate the bias template.
-                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"%(fit_func))
+                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(fit_func, workdir))
         
         if not os.path.exists(fit_datacard):
-                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"%(catstart, catend, fit_func))
+                os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(catstart, catend, fit_func, workdir))
         #make directory in eos that the scripts can copy their big (root) files to when they're done.
         new_head = "/eos/user/b/bgreenbe/cat%d_%d/%s_%s" %(catstart, catend, gen_func, fit_func)
         #if the category directory doesn't exist yet, make that first.
@@ -128,11 +138,11 @@ def main():
                         jobfile.write("cp %s datacards\n"%(fit_datacard))
                 #now copy the necessary templates.
                 jobfile.write("mkdir root\n")
-                jobfile.write("cp /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/data_shapes_workspace.root root\n")
-                jobfile.write("cp /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/sig_shapes_workspace.root root\n")
-                jobfile.write("cp /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/bias_shapes_workspace_%s.root root\n"%(gen_func))
+                jobfile.write("cp %s/root/data_shapes_workspace.root root\n"%(workdir))
+                jobfile.write("cp %s/root/sig_shapes_workspace.root root\n"%(workdir))
+                jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, gen_func))
                 if not gen_func == fit_func:
-                        jobfile.write("cp /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/root/bias_shapes_workspace_%s.root root\n"%(fit_func))
+                        jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, fit_func))
                 newdir = new_head + "/job" + str(job)
                 jobfile.write("mkdir " + newdir + "\n") 
                 #random seed for fitting
@@ -147,8 +157,9 @@ def main():
                                 seed += 1
                         used_seeds[str(seed)] = 1
                 #generate toys
+#old way: --toysFrequentist instead of toysNoSystematics
                         jobfile.write("combine -M GenerateOnly --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0 --X-rtd FITTER_NEW_CROSSING_ALGO " +  \
-                        "--toysFrequentist -t " + str(ntoys) + " --expectSignal 1.0 --saveToys  --rMin=-100 --rMax=100 -n _" + str(job) + " --seed=" + str(seed) +   \
+                        "--toysNoSystematics  -t " + str(ntoys) + " --expectSignal 1.0 --saveToys  --rMin=-100 --rMax=100 -n _" + str(job) + " --seed=" + str(seed) +   \
                         " " + gencard + "\n") 
                         toyname = "higgsCombine_" + str(job) + ".GenerateOnly.mH120." + str(seed) + ".root"
                         #run fit

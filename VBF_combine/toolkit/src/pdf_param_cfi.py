@@ -1,6 +1,15 @@
 ##### if you want to generate toy, the label of alternative function should not have "Pol" word, otherwise it will generate pdf according to QCD POL model and you will get pdf error in toy generation. So you have to change "Pol" words for all the alternative function in generatePdf and pdf_param_cfi file also add the formula in generateFormula file#####
 
 Nparam = {
+######## expx
+'expx1':2,
+'expx2':3,
+'expx3':4,
+'expx4':5,
+'expx5':6,
+'expx6':7,
+'expx7':8,
+'expx8':9,
 ########  exp
 'expPol1' : 1,
 #'exp_pol2':2,#BG comment bc wtf
@@ -47,7 +56,7 @@ Nparam = {
 'Pol2exp' : 2,
 
 ###### sine
-'sine' : 3,
+'sine1' : 3,
 'sine2' : 6,
 'sine3' : 9,
 'sine4' : 12,
@@ -613,7 +622,7 @@ Parameters = {
 },
 
 
-'sine' : {
+'sine1' : {
 	'b0_seldouble_CAT0' : [0.1,0.95],
 	'b1_seldouble_CAT0' : [0.002,0.027],
 	'b2_seldouble_CAT0' : [1.5,4.],
@@ -899,23 +908,23 @@ Parameters = {
 
 #BG added--why was Pol2 not here before??
 'Pol2' : {
-'b0_Pol3_CAT0' : 1.17123, 
-'b1_Pol3_CAT0' : 0.689743,  
-'b2_Pol3_CAT0' : 0.453177, 
-'b0_Pol3_CAT4' : 1.44345, 
-'b1_Pol3_CAT4' : 0.915609,  
-'b2_Pol3_CAT4' : 0.486283,  
+'b0_seldouble_CAT0' : 1.17123, 
+'b1_seldouble_CAT0' : 0.689743,  
+'b2_seldouble_CAT0' : 0.453177, 
+'b0_selsingle_CAT4' : 1.44345, 
+'b1_selsingle_CAT4' : 0.915609,  
+'b2_selsingle_CAT4' : 0.486283,  
 },
 
 'Pol3' : {
-'b0_Pol3_CAT0' : 1.17123, 
-'b1_Pol3_CAT0' : 0.689743,  
-'b2_Pol3_CAT0' : 0.453177, 
-'b3_Pol3_CAT0' : 0.0,
-'b0_Pol3_CAT4' : 1.44345, 
-'b1_Pol3_CAT4' : 0.915609,  
-'b2_Pol3_CAT4' : 0.486283,  
-'b3_Pol3_CAT4' : 0.0,
+'b0_seldouble_CAT0' : 1.17123, 
+'b1_seldouble_CAT0' : 0.689743,  
+'b2_seldouble_CAT0' : 0.453177, 
+'b3_seldouble_CAT0' : 0.0,
+'b0_selsingle_CAT4' : 1.44345, 
+'b1_selsingle_CAT4' : 0.915609,  
+'b2_selsingle_CAT4' : 0.486283,  
+'b3_selsingle_CAT4' : 0.0,
 },
 
 'Pol4' :{
@@ -946,20 +955,20 @@ Parameters = {
 },
 
 'Pol6' : {
-'b0_Pol6_CAT0' : 9.3,
-'b1_Pol6_CAT0' : 8.3,
-'b2_Pol6_CAT0' : 6.3,
-'b3_Pol6_CAT0' : 5.3,
-'b4_Pol6_CAT0' : 4.8,
-'b5_Pol6_CAT0' : 3.3,
-'b6_Pol6_CAT0' : 0.0,
-'b0_Pol6_CAT4' : 0,
-'b1_Pol6_CAT4' : 8.75,
-'b2_Pol6_CAT4' : 7.71,
-'b3_Pol6_CAT4' : 5.55,
-'b4_Pol6_CAT4' : 4.6,
-'b5_Pol6_CAT4' : 3.3,
-'b6_Pol6_CAT4' : 0.0,
+'b0_seldouble_CAT0' : 9.3,
+'b1_seldouble_CAT0' : 8.3,
+'b2_seldouble_CAT0' : 6.3,
+'b3_seldouble_CAT0' : 5.3,
+'b4_seldouble_CAT0' : 4.8,
+'b5_seldouble_CAT0' : 3.3,
+'b6_seldouble_CAT0' : 0.0,
+'b0_selsingle_CAT4' : 0,
+'b1_selsingle_CAT4' : 8.75,
+'b2_selsingle_CAT4' : 7.71,
+'b3_selsingle_CAT4' : 5.55,
+'b4_selsingle_CAT4' : 4.6,
+'b5_selsingle_CAT4' : 3.3,
+'b6_selsingle_CAT4' : 0.0,
 },
 'Pol7' : {
 'b0_seldouble_CAT0' : 9.3,
@@ -980,24 +989,24 @@ Parameters = {
 'b7_selsingle_CAT4' : 0,
 },
 'Pol8' : {
-'b0_Pol8_CAT0' : 9.3,
-'b1_Pol8_CAT0' : 8.8,
-'b2_Pol8_CAT0' : 7.8,
-'b3_Pol8_CAT0' : 6.5,
-'b4_Pol8_CAT0' : 6.15,
-'b5_Pol8_CAT0' : 5.0,
-'b6_Pol8_CAT0' : 4.5,
-'b7_Pol8_CAT0' : 3.8,
-'b8_Pol8_CAT0' : 0,
-'b0_Pol8_CAT4' : 0.0,
-'b1_Pol8_CAT4' : 0.0,
-'b2_Pol8_CAT4' : 0.0,
-'b3_Pol8_CAT4' : 0.0,
-'b4_Pol8_CAT4' : 0.0,
-'b5_Pol8_CAT4' : 5.5,
-'b6_Pol8_CAT4' : 3.5,
-'b7_Pol8_CAT4' : 3.61,
-'b8_Pol8_CAT4' : 0,
+'b0_seldouble_CAT0' : 9.3,
+'b1_seldouble_CAT0' : 8.8,
+'b2_seldouble_CAT0' : 7.8,
+'b3_seldouble_CAT0' : 6.5,
+'b4_seldouble_CAT0' : 6.15,
+'b5_seldouble_CAT0' : 5.0,
+'b6_seldouble_CAT0' : 4.5,
+'b7_seldouble_CAT0' : 3.8,
+'b8_seldouble_CAT0' : 0,
+'b0_selsingle_CAT4' : 0.0,
+'b1_selsingle_CAT4' : 0.0,
+'b2_selsingle_CAT4' : 0.0,
+'b3_selsingle_CAT4' : 0.0,
+'b4_selsingle_CAT4' : 0.0,
+'b5_selsingle_CAT4' : 5.5,
+'b6_selsingle_CAT4' : 3.5,
+'b7_selsingle_CAT4' : 3.61,
+'b8_selsingle_CAT4' : 0,
 },
 
 }

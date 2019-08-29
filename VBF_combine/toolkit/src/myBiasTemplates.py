@@ -7,7 +7,6 @@ from optparse import OptionParser,OptionGroup
 import warnings
 
 from  pdf_param_cfi import *
-#from generatePdf_cat import *
 from myGenPdf import *
 from generateFormula import *
 
@@ -34,18 +33,11 @@ gcs_aux=[] # for memory issues
 ####################################################################################################
 def parser(mp=None):
     if not mp: mp = OptionParser()
-#    mp.add_option('','',help=colours[5]+''+colours[0],default='',type='',dest='')
-#
-#    mg1 = OptionGroup(mp,'GroupTitle')
-#    mg1.add_option('','',help=colours[5]+''+colours[0],default='',type='',dest='')
-#    mp.add_option_group(mg1)
 #
     mp.add_option('--workdir',help=colours[5]+'Case workdir.'+colours[0],default='case0',type='str')
     mp.add_option('--long',help=colours[5]+'Long filenames.'+colours[0],default=False,action='store_true')
     mp.add_option('-v','--verbosity',help=colours[5]+'Verbosity.'+colours[0],default=0,action='count')
     mp.add_option('-q','--quiet',help=colours[5]+'Quiet.'+colours[0],default=True,action='store_false')
-#    mp.add_option('-q','--quiet',help=colours[5]+'Quiet.'+colours[0],default=False,action='store_false')
-#
     mg1 = OptionGroup(mp,'Selection setup')
     mg1.add_option('--SELCATs',help=colours[5]+'Selection/Category setup.'+colours[0],default='double;DoubleB;-1#0.0875#0.5775#0.7875#1.,single;SingleB;-1#0.0775#0.5775#0.7775#0.8775#1.',type='str',action='callback',callback=SELsetup,dest='SC')# final
     mp.add_option_group(mg1)
@@ -95,29 +87,29 @@ def gaStyle(g,i):
 
 ####################################################################################################
 def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,title,ks, iS): #BG added iS
-#    can.cd(C+1)
     can.cd(0)
     can.SetTitle(title)
     can.SetFillColor(0)
     can.SetFillStyle(-1)
-#    can.SetLogy()
     print 'plotting'
     gPad.SetBottomMargin(0.3)
     frametop = x.frame()
     framebot = x.frame()
 # part 1
     rh.plotOn(frametop)
-    model.plotOn(frametop,RooFit.LineWidth(2))
+    model.plotOn(frametop,RooFit.LineWidth(2)) #blue
+#plot qcd also
+#plot normalized by yield
+    qPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(2)) #red
+    zPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(3)) #green
+    tPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(5)) #yellow
 
 
-#    rhres = frametop.residHist()
     rhres = frametop.pullHist()
     p1 = RooArgSet(qPDF)
     p2 = RooArgSet(zPDF)
     p3 = RooArgSet(tPDF)
     model.plotOn(frametop,RooFit.Components(p1),RooFit.LineWidth(2),RooFit.LineColor(kBlack),RooFit.LineStyle(kDashed))
-#    model.plotOn(frametop,RooFit.Components(p2),RooFit.LineWidth(2),RooFit.LineColor(kBlue))
-#    model.plotOn(frametop,RooFit.Components(p3),RooFit.LineWidth(2),RooFit.LineColor(kGreen+1))
     frametop.GetXaxis().SetTitleSize(0)
     frametop.GetXaxis().SetLabelSize(0)
     frametop.GetYaxis().SetLabelSize(0.035)
@@ -130,11 +122,11 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
     ndf = int((opts.X[1]-opts.X[0])/(opts.dX[0])) - (n_param)
     chi2=chi2_val/ndf
     prob = ROOT.TMath.Prob(chi2_val,ndf)
-    print ndf
 #Start BG changes
  #print stats to output files (separated by type of stat AND category)
-   # if opts.function == "Pol2":
     homedir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/"
+  #only overwrite the files for the first order model (otherwise append).
+#*****************make sure you change from 5************************************
     if "1" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
         lett = "w"
         print("Overwriting files starting with function %s."%opts.function)
@@ -200,7 +192,6 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
     pave.AddText("ks=%.2f"%ks)
     pave.Draw()
     framebot.addObject(pave)
-    print 'here'
 
     framebot.Draw()
     gPad.Update()
@@ -224,9 +215,9 @@ def main():
     
 # Setup
     SC = opts.SC if not type(opts.SC)==str else SELsetup(opts.SC)
-    fTF = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath))
+#    fTF = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath))
     LUMI = opts.LUMI
-    NBINS = [int((opts.X[1]-opts.X[0])/(x)) for x in opts.dX]    
+    NBINS = [int((opts.X[1]-opts.X[0])/(x)) for x in opts.dX] 
     n_param = Nparam[opts.function] 
     MASS=125
 
@@ -278,115 +269,99 @@ def main():
         qcd_pdf_aux2 = {}
         model        = {}
         nQCD         = {}
-        transfer     = {}
+    #    transfer     = {}
         zPDF,tPDF,qPDF,sPDF = {},{},{},{}
         yZ,yT,yQ     =  {} ,{},{}
         can = TCanvas("canD_sel%s"%S.tag,"%s"%opts.function,600,600)
-#        can.Divide(2,2)
 ## Category loop
         for C in range(S.ncat):
             if (1>0): #BG change
 #                C=0
 #                   if iS==0:
-                Cp = C + sum([x for x in SC.ncats[0:iS]])
+                Cp = C + sum([xx for xx in SC.ncats[0:iS]])
+                print("Cp = %d"%(Cp))
 ####################################################################################################
 #### Start of RooFit part 
-
-        #    for ib in range(opts.BRN[iS]+1):
-    #            if C>0: continue
-#                nb = "b%d_CAT%d"%(ib,Cp)
-#                brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
-#                nbp = "CAT%d"%(Cp)
-#                if not nbp in brn_params: brn_params[nbp] = RooArgList()
-#                brn_params[nbp].add(brn[nb])
   ## x
             x = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,opts.X[0],opts.X[1])
-            #x = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,0.0,1.0)
             x_name="mbbReg_CAT%d"%Cp
-            print("******************** opts.X[0] = %s, opts.X[1] = %s *****************************"%(str(opts.X[0]), str(opts.X[1]))) 
-            print "test"
-            print x_name
             trans_p = {}
   ## Transfer functions            
-            if not C==0:
-                ftf = fTRF.Get("fRat_sel%s_CAT%d"%(S.label,Cp))
-                npar = ftf.GetNpar()
-  ### TF Parameters
-                ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
-                for ip in range(npar):
-                    if not ntf in trans_p: trans_p[ntf] = []
-                    trans_p[ntf] += [RooRealVar(ntf+"_p%d"%ip,ntf+"_p%d"%ip,ftf.GetParameter(ip),-0.1,0.1)]
-                    if 'Fix' in opts.TF[iS]:
-                        trans_p[ntf][-1].setError(fTF[opts.TF[iS]]['scale'][Cp]*ftf.GetParError(ip))
-                    else:
-                        trans_p[ntf][-1].setError(ftf.GetParError(ip))
-                    trans_p[ntf][-1].setConstant(kTRUE)
-  ### TF Functions
-                rl = RooArgList(x)
-                for ti,t in enumerate(trans_p[ntf]): 
-                    if ti==0 and fTF[opts.TF[iS]]['f'][-3:]=="+ 1": continue
-                    rl.add(t)
-                    ntf = "transfer_%s_CAT%d"%(opts.TF[iS],Cp)
-                    transfer[ntf] = RooGenericPdf(ntf,fTF[opts.TF[iS]]['f'],rl)
+#            if not C==0:
+#                ftf = fTRF.Get("fRat_sel%s_CAT%d"%(S.label,Cp))
+#                npar = ftf.GetNpar()
+#  ### TF Parameters
+#                ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
+#                for ip in range(npar):
+#                    if not ntf in trans_p: trans_p[ntf] = []
+#                    trans_p[ntf] += [RooRealVar(ntf+"_p%d"%ip,ntf+"_p%d"%ip,ftf.GetParameter(ip),-0.1,0.1)]
+#                    if 'Fix' in opts.TF[iS]:
+#                        trans_p[ntf][-1].setError(fTF[opts.TF[iS]]['scale'][Cp]*ftf.GetParError(ip))
+#                    else:
+#                        trans_p[ntf][-1].setError(ftf.GetParError(ip))
+#                    trans_p[ntf][-1].setConstant(kTRUE)
+#  ### TF Functions
+#                rl = RooArgList(x)
+#                for ti,t in enumerate(trans_p[ntf]): 
+#                    if ti==0 and fTF[opts.TF[iS]]['f'][-3:]=="+ 1": continue
+#                    rl.add(t)
+#                    ntf = "transfer_%s_CAT%d"%(opts.TF[iS],Cp)
+#                    transfer[ntf] = RooGenericPdf(ntf,fTF[opts.TF[iS]]['f'],rl)
 
   ### QCD part
       ### Containers
             N = "CAT%d"%(Cp)
-            print Cp
-            print N
             h[N]   = TH1F("hMbb_%s"%N,"hMbb_%s"%N,NBINS[iS],opts.X[0],opts.X[1])
             hb[N]  = TH1F("hMbb_blind_%s"%N,"hMbb_blind_%s"%N,NBINS[iS],opts.X[0],opts.X[1])
       ### Define cut
-            print S.boundaries[C]
-            print S.boundaries[C+1]
             cut    = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f)"%(S.boundaries[C],S.boundaries[C+1]))
             cutB   = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f) && mbbRegFSR>100 && mbbRegFSR<150"%(S.boundaries[C],S.boundaries[C+1]))
       ### Draw
             c0.cd()
                         #c0.SetLogy()
             T.Draw("mbbRegFSR>>%s"%(h[N].GetName()),cut)
-                        #c0.SaveAs(N+"test.png")
+            c0.SaveAs(N+"test.png")
             T.Draw("mbbRegFSR>>%s"%(hb[N].GetName()),cutB)
-                        #c0.SaveAs(N+"Btest.png")
+            c0.SaveAs(N+"Btest.png")
         #    for i in range(NBINS[iS]):
         #        if h[N].GetBinContent(i+1) ==0 : print i
             #    print h[N].GetBinContent(i+1)
             #    print i
       ### Yields
             Y[N]   = RooRealVar("yield_data_CAT%d"%Cp,"yield_data_CAT%d"%Cp,h[N].Integral())
-            print h[N].Integral()
+            print("h[n] integral: " + str(h[N].Integral()))
       ### Histograms
             rh[N]  = RooDataHist("data_hist_CAT%d"%Cp,"data_hist_CAT%d"%Cp,RooArgList(x),h[N])
             rhb[N] = RooDataHist("data_hist_blind_CAT%d"%Cp,"data_hist_blind_CAT%d"%Cp,RooArgList(x),hb[N])
             h_data = rh[N].createHistogram('h_data',x)
-#            #print "h_data_integral=%.3f"%(h_data.Integral())
   ### Model
-            print Cp
             #if Cp==0 or Cp==4:
-            #if Cp > -1:
             if 0 == 0:
                 if Cp==4 :  gcs_aux[:]=[]
                 [qcd_pdf[N],params[N]] = generate_pdf(x, pdf_name=opts.function,x_name=x_name,selection=S.tag,gcs=gcs_aux,real_cat=(C if iS == 0 else (C+4))) 
-                if qcd_pdf[N] == None : return -1
+                if qcd_pdf[N] == None : 
+                    sys.exit("qcd_pdf = None !!!!!!!!!!!!!!!!!")
             else:
             #    for ib in range(opts.BRN[iS]+1):
             #        nb = "b%d_CAT%d"%(ib,sum(SC.ncats[0:iS]))
             #        brn[nb].setConstant(kTRUE)
             #    qcd_pdf_aux[N]  = RooBernstein("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),x,brn_params["CAT%d"%(sum(SC.ncats[0:iS]))])
-                formula = ''
-                params_aux = RooArgList()
-                for ib in range(n_param): 
-                    gcs_aux[ib].setConstant(kTRUE)
-                    gcs_aux[ib].Print()
-                #    gcs_aux[ib].setConstant(kTRUE)
-                #    gcs_aux[ib].Print()
-                    params_aux.add(gcs_aux[ib])
-                if (opts.function.find('Pol')==-1) : 
-                    params_aux.add(x)
-                    formula=generate_formula(pdf_name=opts.function,x_name=x_name,selection=S.tag)
-                if (opts.function.find('Pol')==-1) : qcd_pdf_aux[N] =  ROOT.RooGenericPdf("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"",formula,params_aux) 
-                else : qcd_pdf_aux[N] = RooBernstein("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),x,params_aux)
-                qcd_pdf_aux2[N] = RooProdPdf("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),RooArgList(transfer["transfer_%s_CAT%d"%(opts.TF[iS],Cp)],qcd_pdf_aux[N]))
+        #        formula = ''
+        #        params_aux = RooArgList()
+        #        for ib in range(n_param): 
+        #            gcs_aux[ib].setConstant(kTRUE)
+        #            gcs_aux[ib].Print()
+        #        #    gcs_aux[ib].setConstant(kTRUE)
+        #            params_aux.add(gcs_aux[ib])
+        #        if (opts.function.find('Pol')==-1) : 
+        #            params_aux.add(x)
+        #            formula=generate_formula(pdf_name=opts.function,x_name=x_name,selection=S.tag)
+        #        if (opts.function.find('Pol')==-1) : 
+        #            qcd_pdf_aux[N] =  ROOT.RooGenericPdf("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"",formula,params_aux) 
+        #        else : 
+        #            qcd_pdf_aux[N] = RooBernstein("qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_aux_%s_CAT%d"%(''.join(opts.TF),Cp),x,params_aux)
+                #qcd_pdf_aux2[N] = RooProdPdf("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),RooArgList(transfer["transfer_%s_CAT%d"%(opts.TF[iS],Cp)],qcd_pdf_aux[N]))
+                qcd_pdf_aux2[N] = RooProdPdf("qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),"qcd_model_%s_CAT%d"%(''.join(opts.TF),Cp),RooArgList())
                 qcd_pdf[N]      = qcd_pdf_aux2[N] #RooAbsPdf(qcd_pdf_aux2[N])
                 if opts.verbosity>0 and not opts.quiet: qcd_pdf[N].Print()
     
@@ -398,69 +373,52 @@ def main():
       ### Yields
             yZ[N]    = wBKG.var("yield_ZJets_CAT%d"%Cp)
             yT[N]    = wBKG.var("yield_Top_CAT%d"%Cp)
-            yQ[N]    = RooRealVar("yield_QCD_CAT%d"%Cp,"yield_QCD_CAT%d"%Cp,1000,0,1e+10)
+            yq_est = h[N].Integral()
+            yQ[N]    = RooRealVar("yield_QCD_CAT%d"%Cp,"yield_QCD_CAT%d"%Cp,yq_est,yq_est/2.,2*yq_est)
             yZ[N].setConstant(kTRUE)
             yT[N].setConstant(kTRUE)
-#            ySVBF = wSIG.var("yield_signalVBF_mass%d_CAT%d"%(MASS,Cp))
-#            ySGF  = wSIG.var("yield_signalGF_mass%d_CAT%d"%(MASS,Cp))
-#            yS    = RooRealVar("yield_signal_mass%d_CAT%d"%(MASS,Cp),"yield_signal_mass%d_CAT%d"%(MASS,Cp),ySVBF.getValV()+ySGF.getValV(),0.,400.)
 
 
   ### Combined model
-          #    model[N] = RooAddPdf("bkg_model_CAT%d"%(Cp),"bkg_model_CAT%d"%(Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
+#            model[N] = RooAddPdf("bkg_model_CAT%d"%(Cp),"bkg_model_CAT%d"%(Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
+            print("before: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
             model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),"bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
   ### Fit
             res   = model[N].fitTo(rh[N],RooFit.Save(),RooFit.Warnings(ROOT.kTRUE))
+            print("after: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
             for gc in gcs_aux :
                 gc.Print()
             if opts.verbosity>0 and not opts.quiet: res.Print()
 
 
+            print("model[%s] = %s" %(N, model[N]))
             chi2 = RooChi2Var("chi2", "chi2", model[N], rh[N])
             chi2_val = chi2.getVal()
             print 'Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
             total_fitted_yield = yZ[N].getVal()+yT[N].getVal()+yQ[N].getVal()
             h_data = rh[N].createHistogram('h_data',x)
             print "h_data_integral=%.3f"%(h_data.Integral())
-            """h_func = model[N].createHistogram('h_func',x)
-            print "h_func_integral=%.3f"%(h_func.Integral())
-            #h_func.Scale(total_fitted_yield/h_func.Integral())
-            h_func.SetLineColor(kRed)
-            h_func.SetLineWidth(3)
-            print "h_func integral after scaling=%.2f"%(h_func.Integral())"""
-            #ks = h_func.KolmogorovTest(h_data,'NN')
             ks=0
             print 'KS probability = ',ks
 
   ### Draw
             rh[N]  = RooDataHist("data_hist_CAT%d"%Cp,"data_hist_CAT%d"%Cp,RooArgList(x),h[N].Rebin(10))            
             RooDraw(opts,can,C,S,x,rh[N],model[N],qcd_pdf[N],zPDF[N],tPDF[N],archive,chi2_val,n_param,opts.function,ks,iS)
-        #    can.cd(C+1)
             can.cd(0)
             pCMS1.Draw()
             pCMS2.Draw()
 
   ### Reset constant settings
-    #        for ib in range(opts.BRN[iS]+1):
-    #            if C==0:
-    #                nb = "b%d_CAT%d"%(ib,Cp)
-    #                brn[nb].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed
             for ib in range(n_param): 
                 if C==0 :
                     gcs_aux[ib].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed)
-            if not C==0 :
-                ntf = "trans_%s_CAT%d"%(opts.TF[iS],Cp)
-                for t in trans_p[ntf]: t.setConstant(kFALSE if opts.forfit else (kFALSE if not 'Fix' in opts.TF[iS] else kTRUE)) ## false for final fit, true if fixed
   ### Saving
             for o in [rh[N],rhb[N],model[N],Y[N]]:
                 getattr(w,'import')(o,RooFit.RenameConflictNodes("(1)"))
                 if opts.verbosity>0 and not opts.quiet: o.Print()
-            #h_func.Draw("same")
                 makeDirs("%s/plot/biasFunctionsCATS/"%opts.workdir)
-                #if N=='CAT0' or N=='CAT4':
-                if 2*2 == 4:
-                          can.SaveAs("%s/plot/biasFunctionsCATS/%s_%s_%s.pdf"%(opts.workdir,can.GetName(),opts.function,N))
-                          can.SaveAs("%s/plot/biasFunctionsCATS/%s_%s_%s.png"%(opts.workdir,can.GetName(),opts.function,N))
+                can.SaveAs("%s/plot/biasFunctionsCATS/%s_%s_%s.pdf"%(opts.workdir,can.GetName(),opts.function,N))
+                can.SaveAs("%s/plot/biasFunctionsCATS/%s_%s_%s.png"%(opts.workdir,can.GetName(),opts.function,N))
 
 
 ###

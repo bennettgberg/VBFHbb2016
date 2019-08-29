@@ -195,12 +195,15 @@ for i in range(nevents):
 #  if not rErr[i] > 12:
 #    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
 #    continue
-  if str(pull) in pulls: # and pulls[str(pull)] > 5:
+#  if str(pull) in pulls: # and pulls[str(pull)] > 5:
+#    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
+#    continue
+#  if not str(pull) in pulls:
+#    pulls[str(pull)] = 0
+#  pulls[str(pull)] += 1
+  if pull == 0.0:
     print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
     continue
-  if not str(pull) in pulls:
-    pulls[str(pull)] = 0
-  pulls[str(pull)] += 1
   real_nevents += 1
   mu_inj_avg += r[i]
   hist_all.Fill((r[i]-1.0)/rErr[i])
