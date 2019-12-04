@@ -28,6 +28,8 @@ def main():
         verbosity = 0
         #directory to find datacards and .root files for input to combine.
         workdir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"
+        #name of directory to run tests in: default / to separate directories
+        spec_name = "/"
 #        flavour = "workday"  
 #parse input arguments to see if any default values are being replaced
         #only -h or --help is a valid option without a value after it
@@ -66,12 +68,20 @@ def main():
                         #if user includes a / at the end, remove it. We will add it ourselves.
                         if workdir[len(workdir)-1] == "/":
                             workdir = workdir[:-1]
+                elif sys.argv[i] == "--dir" or sys.argv[i] == "-d":
+                        #spec_name is special name for the directory to do this in.
+                        spec_name = sys.argv[i+1]
+                        #make sure it starts and ends with "/"
+                        if spec_name[0] != "/":
+                            spec_name = "/" + spec_name
+                        if spec_name[len(spec_name)-1] != "/":
+                            spec_name = spec_name + "/"
                 else:
                         if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
                                 print("Error! Unrecognized option %s." %sys.argv[i])
                         else:
                                 print("Script to generate executable files for combine calls, and make directories to copy them to.")
-                        print("Available options: --ntoys (-t), --ncalls (-n), --njobs (-j), --gen_func (-g), --fit_func (-f), --CATS (-c), --seed_params (-s)")
+                        print("Available options: --ntoys (-t), --ncalls (-n), --njobs (-j), --gen_func (-g), --fit_func (-f), --CATS (-c), --seed_params (-s), --dir (-d)")
                         print("Usage: ./make_scripts.py [option] [value] [option] [value]...")
                         sys.exit(0)
                 i += 2
@@ -96,21 +106,25 @@ def main():
         #fitcard is just the name without the path.
         fitcard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(fit_func, catstart, catend)
         #make sure the model exists also.
-        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, gen_func)):
+        #but if it's cats 0-8 then we don't need this (the funcs are chosen by hand in the datacard).
+        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, gen_func)) and not (catstart == 0 and catend == 8):
                 #generate the bias template.
                 os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(gen_func, workdir))
-        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, fit_func)):
+        if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, fit_func)) and not (catstart == 0 and catend == 8):
                 #generate the bias template.
                 os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/myBiasTemplates.py --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(fit_func, workdir))
         
         if not os.path.exists(fit_datacard):
                 os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(catstart, catend, fit_func, workdir))
         #make directory in eos that the scripts can copy their big (root) files to when they're done.
-        new_head = "/eos/user/b/bgreenbe/cat%d_%d/%s_%s" %(catstart, catend, gen_func, fit_func)
+        new_head = "/eos/user/b/bgreenbe/cat%d_%d%s%s_%s" %(catstart, catend, spec_name, gen_func, fit_func)
         #if the category directory doesn't exist yet, make that first.
         cat_dir = "/eos/user/b/bgreenbe/cat%d_%d"%(catstart, catend)
         if not os.path.exists(cat_dir):
                 os.system("mkdir " + cat_dir)
+        #same for special name.
+        if not os.path.exists(cat_dir + spec_name):
+                os.system("mkdir " + cat_dir + spec_name)
         if os.path.exists(new_head):
                 print("WARNING: Directory %s exists. Are you sure you want to overwrite?"%new_head)
         else:
@@ -140,7 +154,11 @@ def main():
                 jobfile.write("mkdir root\n")
                 jobfile.write("cp %s/root/data_shapes_workspace.root root\n"%(workdir))
                 jobfile.write("cp %s/root/sig_shapes_workspace.root root\n"%(workdir))
-                jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, gen_func))
+                if not (catstart == 0 and catend == 8):
+                    jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, gen_func))
+                else:
+                    jobfile.write("cp %s/root/bias_shapes_workspace_Pol4.root root\n"%(workdir))
+                    jobfile.write("cp %s/root/bias_shapes_workspace_Pol5.root root\n"%(workdir))
                 if not gen_func == fit_func:
                         jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, fit_func))
                 newdir = new_head + "/job" + str(job)
@@ -172,10 +190,11 @@ def main():
                                 seedf += 1
                         used_seeds[str(seedf)] = 1
 #                                sys.exit("Error: random seed out of range: %d. Please specify smaller (or larger) parameters so that the seed is between -2147483648 and 2147483647."%seed)
+                #Add -S 0 below to disable systematics for FitDiagnostics
                         jobfile.write("combine -M FitDiagnostics --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0" + \
                         " --X-rtd FITTER_NEW_CROSSING_ALGO -t " + str(ntoys)  + " --seed=" + str(seedf) + " -v " + str(verbosity) \
-                        + " --expectSignal=1.0 --robustFit=1  --rMin=-100 --rMax=100 --toysFile " + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
-                        " --setRobustFitTolerance 0.01 -d " + fitcard + "\n")
+                        + " --expectSignal=1.0 --robustFit=1 --rMin=-100 --rMax=100 --toysFile " + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
+                        " --setRobustFitTolerance 0.01 -S 0 -d " + fitcard + "\n")
                        #mv the files from this call to eos.
                         jobfile.write("mv higgsCombine_%d.GenerateOnly.mH120.%d.root %s\n"%(job, seed, newdir))
                         jobfile.write("mv higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root %s\n"%(job, c, seedf, newdir))
@@ -202,11 +221,13 @@ def main():
 #       #now make script to move the lagging files to the correct directory (if the job gets killed before it can move them)
         mvfile = open("mv_files.sh", "w")
         for job in range(njobs):
-                newdir = "/eos/user/b/bgreenbe/cat%d_%d/%s_%s/job%d" %(catstart, catend, gen_func, fit_func, job)
+                newdir = "/eos/user/b/bgreenbe/cat%d_%d%s%s_%s/job%d" %(catstart, catend, spec_name, gen_func, fit_func, job)
                 mvfile.write("mkdir " + newdir + "\n")
                 mvfile.write("mv fitDiagnostics_" + str(job) + "_* " + newdir + "\n")
                 mvfile.write("mv higgsCombine_" + str(job) + ".* " + newdir + "\n")
                 mvfile.write("mv higgsCombine_" + str(job) + "_* " + newdir + "\n")
+                #now rm all the higgsCombine files because they're useless.
+                mvfile.write("rm %s/higgsCombine*\n"%(newdir))
         #now all that remains are the error .root files. Move these to the head.
         mvfile.write("mv *.root " + new_head + "\n")
         mvfile.write("mv *.dot " + new_head + "\n")
@@ -220,7 +241,8 @@ def main():
         mvfile.write("mkdir plots\n")
         mvfile.write("cp ~/public/plot_bias.py plots\n")
         mvfile.write("cd plots\n")
-        mvfile.write("./plot_bias.py --CATS %d,%d --gen_func %s --fit_func %s --njobs %d --ntoys %d --ncalls %d\n"%(catstart, catend, gen_func, fit_func, njobs, ntoys, ncalls))
+        #ntoys -1 means Asimov dataset.
+        mvfile.write("./plot_bias.py --CATS %d,%d --gen_func %s --fit_func %s --njobs %d --ntoys %d --ncalls %d %s\n"%(catstart, catend, gen_func, fit_func, njobs, abs(ntoys), ncalls, ("--dir " + spec_name if spec_name != "" else "")))
         mvfile.close()
         #make it executable
         os.system("chmod +x mv_files.sh")

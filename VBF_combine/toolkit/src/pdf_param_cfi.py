@@ -21,6 +21,15 @@ Nparam = {
 'expPol7':7,
 'expPol8':8,
 
+####### #BernPol (Bernstein Polynomials)
+'BernPol2':3,
+'BernPol3':4,
+'BernPol4':5,
+'BernPol5':6,
+'BernPol6':7,
+'BernPol7':8,
+'BernPol8':9,
+
 ####### Poldijet
 'Pol1_dijet' : 3,
 'Pol2_dijet' : 4,
@@ -47,9 +56,12 @@ Nparam = {
 #######  x^Pol
 'x^Pol1' : 2,
 'x^Pol2' : 3,
-'x^pol3' : 4,
+'x^Pol3' : 4,
 'x^Pol4' : 5,
 'x^Pol5' : 6,
+'x^Pol6' : 7,
+'x^Pol7' : 8,
+'x^Pol8' : 9,
 
 ######## Pol*exp
 'Pol1exp' : 1,

@@ -3,20 +3,23 @@ import ROOT
 from ROOT import RooFit,RooRealVar
 import math
 import sys
+import os
 from  pdf_param_cfi import *
 
 #real_cat is the real category, 0-8 (for naming purposes only)
-def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', selection="double",gcs=[], real_cat=0):
+def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', selection="double",gcs=[], real_cat=0, val140=10000):
     pdf = None
     coeff = ROOT.RooArgList()
-    n_param = Nparam[pdf_name]
-    print n_param
+#    n_param = Nparam[pdf_name]
+#    print n_param
     cat_num=0
+#TEMPORARY COMMENTS, DON'T FORGET TO CHANGE BACK!!!!!!!!!!!!!!11
     if selection=="double" : cat_num=0
     if selection=="single" : cat_num=4
 #    if not pdf_name in Parameters:
 #        sys.exit("Error: pdf name %s is not recognized."%pdf_name)
     name = "qcd_model_%s_CAT%d"%(pdf_name, real_cat)
+    #name = "qcd_model_%s_CAT%d"%(pdf_name, cat_num) #temporary change, for unified singleB and doubleB
     if pdf_name=="expPow":            
         coeff.removeAll()
         brn = {}
@@ -53,6 +56,31 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                 coeff.add(x)
                 pdf = ROOT.RooGenericPdf(name,"",formula,coeff )
 
+    elif "x^Pol" in pdf_name:
+                coeff.removeAll()
+                brn = {}
+                brn_names = []
+                #x^Pols have one more param than their order (start indexing from 0)
+                nparam = int(pdf_name[len(pdf_name)-1]) + 1
+                formula = "TMath::Power(%s,(0+"%(x_name)
+                for p in xrange(nparam):
+                        nb = "b%d_%s_CAT%d"%(p,selection,real_cat)
+                #       nb = "b%d_sel%s_CAT%d"%(p,selection,real_cat)
+                        brn_names.append(nb)
+                 #      brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
+                 #       [pmin,pmax] = Parameters[pdf_name][nb]
+                        [pmin,pmax] = [-10,10]
+                        brn[nb] = RooRealVar(nb,nb,pmin,pmax)
+                        coeff.add(brn[nb])
+                        gcs.append(brn[nb])
+                        formula += "+%s*TMath::Power(%s, %d)"%(brn_names[p], x_name, p)
+                #first parenthesis for closing the exponent, then for closing the power function
+                formula += "))"
+                print("formula:%s"%formula)
+#                sys.exit(0)
+                #formula = "TMath::Power(%s,(%s+%s*%s))"%(x_name,brn_names[0],brn_names[1],x_name) 
+                coeff.add(x)
+                pdf = ROOT.RooGenericPdf(name,"",formula,coeff )
 
     elif pdf_name=="x^Pol1":
                 coeff.removeAll()
@@ -63,7 +91,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                 #       nb = "b%d_sel%s_CAT%d"%(p,selection,real_cat)
                         brn_names.append(nb)
                  #      brn[nb] = RooRealVar(nb,nb,0.5,0,10.)
-                        [pmin,pmax] = Parameters[pdf_name][nb]
+                 #       [pmin,pmax] = Parameters[pdf_name][nb]
+                        [pmin,pmax] = [-10,10]
                         brn[nb] = RooRealVar(nb,nb,pmin,pmax)
                         coeff.add(brn[nb])
                         gcs.append(brn[nb])
@@ -822,21 +851,34 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                 brn_names = []
             #number of parameters (excluding the normalization) is the order of the expPol.
                 nparam = int(pdf_name[len(pdf_name)-1])
-            #first make the normalization parameter.
-#                nb = "b0_sel%s_CAT%d"%(selection,real_cat)
-#                brn_names.append(nb)
-#                brn[nb] = RooRealVar(nb,nb,1000,0,100000)
-#                coeff.add(brn[nb])
-#                gcs.append(brn[nb])
                 formula = "TMath::Exp(0"
+            #first open the file for reading (we'll write to it later)
+                filename = "expPol_params%d.txt"%real_cat
+                read_from_file = (os.path.exists(filename) and nparam > 2)
+                if read_from_file:
+                    initfile = open(filename, "r")
+            #starts at expPol2
+                #we can read the init values of all but one parameter (expPol2 shouldn't read any).
+                for p in range(nparam-2):
+                    line = initfile.readline()
+                sparams = []
+                #only can read into sparams if the file to read from exists.
+                if read_from_file:
+                    sparams = line.split()
+                if read_from_file and not len(sparams) == nparam-1:
+                    print("Error! %d params read from file %s (expected %d params for %s"%(len(sparams), filename, nparam-1, pdf_name))
+                    sys.exit(0)
                 for p in xrange(nparam):
                     nb = "b%d_sel%s_CAT%d"%(p,selection,real_cat)
                     brn_names.append(nb)
                #     init_val = (-0.01)**(nparam+1) #works ok!
-                    init_val = 1*(-0.01)**(nparam+1)
-#                    if p > 4:
-                        #init_val = 10**(-11)
-#                        init_val = abs(init_val*(-0.01)**(nparam-4))
+                    np = nparam #min(nparam, 4)
+                    init_val = 0.0
+                    if p < nparam-1 and read_from_file:
+                        init_val = float(sparams[p])
+                    #elif p < nparam-1:
+                    else:
+                        init_val = (-0.01)**(nparam+1)
                     brn[nb] = RooRealVar(nb,nb,init_val,-1,1)
                     coeff.add(brn[nb])
                     gcs.append(brn[nb])
@@ -849,9 +891,8 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
                 coeff.add(x)
                 pdf = ROOT.RooGenericPdf(name,"",formula,coeff )
                 print("cat %d expPol%d fit: %s"%(real_cat, nparam, str(pdf)))
-
-    elif "Pol" in pdf_name: 
-# #   if pdf_name=="Pol2":            
+    elif "BernPol" in pdf_name:
+        #Bernstein polynomial
         #Pol of order n has n+1 parameters.
         nparam = int(pdf_name[len(pdf_name)-1]) + 1
         coeff.removeAll()
@@ -860,6 +901,27 @@ def generate_pdf(x=ROOT.RooRealVar(), pdf_name="Pol5",x_name='mbbReg_CAT0', sele
         for p in xrange(nparam):   
         #   nb = "b%d_%s_CAT0"%(p,pdf_name)
             nb = "b%d_sel%s_CAT%d"%(p,selection,real_cat)
+            brn_names.append(nb)
+            brn[nb] = RooRealVar(nb,nb,-10,10)
+        #need to square this before fitting. 
+        #how to do that???
+            coeff.add(brn[nb]**2)
+            gcs.append(brn[nb]**2)
+        pdf = ROOT.RooBernstein(name,"",x,coeff)
+
+    elif "Pol" in pdf_name: 
+# #   if pdf_name=="Pol2":            
+        #Pol of order n has n+1 parameters.
+        nparam = int(pdf_name[len(pdf_name)-1]) + 1
+        coeff.removeAll()
+        brn = {}
+        brn_names = []
+        #TEMPORARY CHANGE, MAKE SURE YOU FIX LATER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #    sel = "double"#for fitcat0 
+        for p in xrange(nparam):   
+        #   nb = "b%d_%s_CAT0"%(p,pdf_name)
+            nb = "b%d_sel%s_CAT%d"%(p,selection,real_cat)
+            #nb = "b%d_sel%s_CAT%d"%(p,sel,cat_num) #for fitcat0
             brn_names.append(nb)
             brn[nb] = RooRealVar(nb,nb,-1,1)
             coeff.add(brn[nb])

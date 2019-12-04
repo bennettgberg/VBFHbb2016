@@ -3,11 +3,11 @@ from ROOT import *
 import sys
 
 #name of general function class
-fcname = "expPol"
-#how many orders there are
-norders = 8
+fcname = "x^Pol"
+#how many orders there are, eg 5 for Pol (Pol2-Pol6)
+norders = 7
 #what order to start at, eg 2 for Pol, 1 for expPol
-storder = 1
+storder = 2
 
 #beginning of names of input files
 filenames = ["ndof", "chi2", "rech", "prob"]

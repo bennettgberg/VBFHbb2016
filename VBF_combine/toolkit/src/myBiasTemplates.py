@@ -127,7 +127,7 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
     homedir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/"
   #only overwrite the files for the first order model (otherwise append).
 #*****************make sure you change from 5************************************
-    if "1" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
+    if "2" in opts.function or not os.path.exists(homedir + "ndof_0.txt"):
         lett = "w"
         print("Overwriting files starting with function %s."%opts.function)
     else:
@@ -337,8 +337,11 @@ def main():
   ### Model
             #if Cp==0 or Cp==4:
             if 0 == 0:
-                if Cp==4 :  gcs_aux[:]=[]
-                [qcd_pdf[N],params[N]] = generate_pdf(x, pdf_name=opts.function,x_name=x_name,selection=S.tag,gcs=gcs_aux,real_cat=(C if iS == 0 else (C+4))) 
+#                if Cp==4 :  gcs_aux[:]=[]
+                gcs_aux = []
+                val140 = h[N].GetBinContent(NBINS[iS]/2)
+                [qcd_pdf[N],params[N]] = generate_pdf(x, pdf_name=opts.function,x_name=x_name,selection=S.tag,gcs=gcs_aux,real_cat=(C if iS == 0 else (C+4)), val140=val140) 
+         #       print("Just after call to generate_pdf, gcs_aux: %s"%gcs_aux)
                 if qcd_pdf[N] == None : 
                     sys.exit("qcd_pdf = None !!!!!!!!!!!!!!!!!")
             else:
@@ -381,13 +384,35 @@ def main():
 
   ### Combined model
 #            model[N] = RooAddPdf("bkg_model_CAT%d"%(Cp),"bkg_model_CAT%d"%(Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
-            print("before: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
+            yQ[N].setConstant(kTRUE)
+            #print("before: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
+            print 'before: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
             model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),"bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
   ### Fit
+      #      print("Just before call to fitTo, gcs_aux: %s"%gcs_aux)
             res   = model[N].fitTo(rh[N],RooFit.Save(),RooFit.Warnings(ROOT.kTRUE))
-            print("after: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
+            print 'kTrue: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            yQ[N].setConstant(kFALSE)
+            res   = model[N].fitTo(rh[N],RooFit.Save(),RooFit.Warnings(ROOT.kTRUE))
+            #print("kfalse:yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
+            print 'kFalse:Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            
+            #open file to write model fit results to, so next time can read it.
+            #family name of the function is all but the last character (which is the order)
+            fam_name = opts.function[:len(opts.function)-1]
+            fitfilename = "%s_params%d.txt"%(fam_name, Cp)
+            #only overwrite the file for the first function called (usually order 2)
+            if "2" in opts.function or not os.path.exists(fitfilename):
+                let = "w"
+            else:
+                let = "a"
+            fitfile = open(fitfilename, let)
             for gc in gcs_aux :
                 gc.Print()
+                fitfile.write("%f\t"%(gc.getValV()))
+            fitfile.write("\n")
+            fitfile.close()
+
             if opts.verbosity>0 and not opts.quiet: res.Print()
 
 

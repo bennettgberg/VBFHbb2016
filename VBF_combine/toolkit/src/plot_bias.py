@@ -5,7 +5,7 @@ from ROOT import gStyle
 import sys
 import os
 
-#gROOT.SetBatch(True)
+gROOT.SetBatch(True)
 #gStyle.SetPadTopMargin(0.06)
 #gStyle.SetPadRightMargin(0.04)
 #gStyle.SetPadLeftMargin(0.15)
@@ -35,6 +35,8 @@ catstart = 1
 catend = 1
 #Expected mean
 mu = "1"
+#special name of directory (past catn_n)
+spec_name = ""
 if len(sys.argv) % 2 != 1 and len(sys.argv) != 2:
   sys.exit("Error! Please specify arguments as --[option] [value], eg --ntoys 15")
 i = 1
@@ -55,6 +57,12 @@ while i < len(sys.argv)-1 or len(sys.argv) == 2:
       sys.exit("Error! Please use the --CATS option as: --CATS catstart,catend, eg --CATS 0,0 for only category 0.")
     catstart = int(cats[0])
     catend = int(cats[1])
+  elif sys.argv[i] == "--dir" or sys.argv[i] == "-d":
+    spec_name = sys.argv[i+1]
+    if spec_name[0] != "/":
+      spec_name = "/" + spec_name
+    if spec_name[len(spec_name)-1] != "/":
+      spec_name = spec_name + "/"
   else:
     if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
       print("Error! Unrecognized option %s." %sys.argv[i])
@@ -97,7 +105,7 @@ else:
     #10 different combine calls
     for c in range(ncalls):
   #    filename = "../fitDiagnostics_" + str(num) + "_" + str(c) + ".root"
-      filename = "/eos/user/b/bgreenbe/cat%d_%d/%s_%s/job%d/fitDiagnostics_%d_%d.root" %(catstart, catend, gen_func, fit_func, num, num, c)
+      filename = "/eos/user/b/bgreenbe/cat%d_%d%s/%s_%s/job%d/fitDiagnostics_%d_%d.root" %(catstart, catend, spec_name, gen_func, fit_func, num, num, c)
       tfile = ROOT.TFile.Open(filename)
       if not tfile:
         print("Error! Could not read file %s. Skipping job %d call %d" %(filename, num, c))
@@ -195,11 +203,11 @@ for i in range(nevents):
 #  if not rErr[i] > 12:
 #    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
 #    continue
-#  if str(pull) in pulls: # and pulls[str(pull)] > 5:
-#    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
-#    continue
-#  if not str(pull) in pulls:
-#    pulls[str(pull)] = 0
+  if str(pull) in pulls: # and pulls[str(pull)] > 5:
+    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
+    continue
+  if not str(pull) in pulls:
+    pulls[str(pull)] = 0
 #  pulls[str(pull)] += 1
   if pull == 0.0:
     print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
@@ -271,7 +279,8 @@ hist_all.Draw()
 #pave22.Draw();
 print("Average mu_inj = %f" %mu_inj_avg)
 #make display not immediately close
-s = raw_input("Hit enter to exit.")
-#canv.SaveAs("cat%d_%s_%s_nore.pdf"%(catstart, gen_func, fit_func))
+#s = raw_input("Hit enter to exit.")
+canv.SaveAs("cat%d_%s_%s_%s.pdf"%(catstart, gen_func, fit_func, spec_name[1:len(spec_name)-1]))
+#don't use the first and last chars of spec_name: these are '/'.
 #canv.SaveAs("plots/plot_inj%s_%s_cat%s.pdf"%(mu,fit_funcs[0],cat
 #canv.SaveAs("plot_inj%s_%s_cat%s.pdf"%(mu,fit_funcs[0],cat))
