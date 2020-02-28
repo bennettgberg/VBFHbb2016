@@ -100,9 +100,9 @@ def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,titl
     model.plotOn(frametop,RooFit.LineWidth(2)) #blue
 #plot qcd also
 #plot normalized by yield
-    qPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(2)) #red
-    zPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(3)) #green
-    tPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(5)) #yellow
+ #   qPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(2)) #red
+ #   zPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(3)) #green
+ #   tPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(5)) #yellow
 
 
     rhres = frametop.pullHist()
