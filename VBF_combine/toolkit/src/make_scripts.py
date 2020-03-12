@@ -28,9 +28,13 @@ def main():
         verbosity = 0
         #directory to find datacards and .root files for input to combine.
         workdir = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett"
+        #syst should be either -S 0 (for no systematics) or blank (for systematics)
+        syst = " "
         #name of directory to run tests in: default / to separate directories
         spec_name = "/"
 #        flavour = "workday"  
+        #use only seven categories (exclude 0 and 4)?
+        seven = False
 #parse input arguments to see if any default values are being replaced
         #only -h or --help is a valid option without a value after it
         if len(sys.argv) % 2 != 1 and len(sys.argv) != 2:
@@ -47,12 +51,17 @@ def main():
                         gen_func = sys.argv[i+1]
                 elif sys.argv[i] == "--fit_func" or sys.argv[i] == "-f":
                         fit_func = sys.argv[i+1]
+                elif sys.argv[i] == "-S":
+                        if sys.argv[i+1] == "0":
+                            syst = " -S 0 "
                 elif sys.argv[i] == "--CATS" or sys.argv[i] == "--CATs" or sys.argv[i] == "--cats" or sys.argv[i] == "-c":
                         cats = sys.argv[i+1].split(",")
                         if len(cats) != 2:
                                 sys.exit("Error! Please use the --CATS option as: --CATS catstart,catend, eg --CATS 0,0 for only category 0.")
                         catstart = int(cats[0])
                         catend = int(cats[1])
+                        if not (catstart in range(0, 9) and catend in range(0, 9)):
+                            sys.exit("Error! Categories should be 0-8 only.")
                 elif sys.argv[i] == "--seed_params" or sys.argv[i] == "-s":
                         params = sys.argv[i+1].split(",")
                         if len(params) > 5:
@@ -76,6 +85,10 @@ def main():
                             spec_name = "/" + spec_name
                         if spec_name[len(spec_name)-1] != "/":
                             spec_name = spec_name + "/"
+                elif sys.argv[i] == "--seven" or sys.argv[i] == "-7":
+                        #don't use cats 0 and 4.
+                        if sys.argv[i+1] == "1":
+                            seven = True
                 else:
                         if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
                                 print("Error! Unrecognized option %s." %sys.argv[i])
@@ -95,16 +108,16 @@ def main():
         print("Random seed parameters: " + str(seed_params))
         print("workdir: %s" %(workdir))
         #datacard to generate toys based on
-        gen_datacard = "%s/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(workdir, gen_func, catstart, catend)
         #gencard is just the name without the path.
-        gencard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(gen_func, catstart, catend)
+        gencard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto%s.txt" %(gen_func, catstart, catend, ("_7cats" if seven else ""))
+        gen_datacard = "%s/%s" %(workdir, gencard)
         #if the generating datacard doesn't exist yet, make it.
         if not os.path.exists(gen_datacard):
                 os.system("eval `scramv1 runtime -sh`; /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/mkDatacards_run2_cat.py --CATS %d,%d --bias --function %s --TF ConstPOL1,ConstPOL1 --workdir %s"%(catstart, catend, gen_func, workdir))
         #datacard to fit toys based on
-        fit_datacard = "%s/datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(workdir, fit_func, catstart, catend)
         #fitcard is just the name without the path.
-        fitcard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto.txt" %(fit_func, catstart, catend)
+        fitcard = "datacards/datacard_vbfHbb_bias%s_m125_CAT%d-CAT%d_CATveto%s.txt" %(fit_func, catstart, catend, ("_7cats" if seven else ""))
+        fit_datacard = "%s/%s" %(workdir, fitcard)
         #make sure the model exists also.
         #but if it's cats 0-8 then we don't need this (the funcs are chosen by hand in the datacard).
         if not os.path.exists("%s/root/bias_shapes_workspace_%s.root" %(workdir, gen_func)) and not (catstart == 0 and catend == 8):
@@ -154,13 +167,17 @@ def main():
                 jobfile.write("mkdir root\n")
                 jobfile.write("cp %s/root/data_shapes_workspace.root root\n"%(workdir))
                 jobfile.write("cp %s/root/sig_shapes_workspace.root root\n"%(workdir))
-                if not (catstart == 0 and catend == 8):
+                #there is no root file called bias_shapes_workspace_Pol.root
+                if not (gen_func == "Pol"):
                     jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, gen_func))
                 else:
                     jobfile.write("cp %s/root/bias_shapes_workspace_Pol4.root root\n"%(workdir))
                     jobfile.write("cp %s/root/bias_shapes_workspace_Pol5.root root\n"%(workdir))
-                if not gen_func == fit_func:
-                        jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, fit_func))
+                if not gen_func == fit_func and fit_func != "Pol":
+                    jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, fit_func))
+                elif fit_func == "Pol" and gen_func != "Pol":
+                    jobfile.write("cp %s/root/bias_shapes_workspace_Pol4.root root\n"%(workdir))
+                    jobfile.write("cp %s/root/bias_shapes_workspace_Pol5.root root\n"%(workdir))
                 newdir = new_head + "/job" + str(job)
                 jobfile.write("mkdir " + newdir + "\n") 
                 #random seed for fitting
@@ -190,11 +207,11 @@ def main():
                                 seedf += 1
                         used_seeds[str(seedf)] = 1
 #                                sys.exit("Error: random seed out of range: %d. Please specify smaller (or larger) parameters so that the seed is between -2147483648 and 2147483647."%seed)
-                #Add -S 0 below to disable systematics for FitDiagnostics
+                #Add -S 0 below to disable systematics for FitDiagnostics: accomplished with 'syst'
                         jobfile.write("combine -M FitDiagnostics --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0" + \
                         " --X-rtd FITTER_NEW_CROSSING_ALGO -t " + str(ntoys)  + " --seed=" + str(seedf) + " -v " + str(verbosity) \
                         + " --expectSignal=1.0 --robustFit=1 --rMin=-100 --rMax=100 --toysFile " + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
-                        " --setRobustFitTolerance 0.01 -S 0 -d " + fitcard + "\n")
+                        " --setRobustFitTolerance 0.01 %s -d "%(syst) + fitcard + "\n")
                        #mv the files from this call to eos.
                         jobfile.write("mv higgsCombine_%d.GenerateOnly.mH120.%d.root %s\n"%(job, seed, newdir))
                         jobfile.write("mv higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root %s\n"%(job, c, seedf, newdir))

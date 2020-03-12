@@ -85,76 +85,6 @@ def gaStyle(g,i):
     g.SetFillColor(kGray)
     g.SetFillStyle(1001)
 
-####################################################################################################
-def RooDraw(opts,can,C,S,x,rh,model,qPDF,zPDF,tPDF,archive,chi2_val,n_param,title,ks, iS): #BG added iS
-    can.cd(0)
-    can.SetTitle(title)
-    can.SetFillColor(0)
-    can.SetFillStyle(-1)
-    print 'plotting'
-    gPad.SetBottomMargin(0.3)
-    frametop = x.frame()
-    framebot = x.frame()
-# part 1
-    rh.plotOn(frametop)
-    model.plotOn(frametop,RooFit.LineWidth(2)) 
-#plot qcd also
-#plot normalized by yield
- #   qPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(2)) #red
- #   zPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(3)) #green
- #   tPDF.plotOn(frametop,RooFit.LineWidth(1), RooFit.LineColor(5)) #yellow
-
-
-    rhres = frametop.pullHist()
-    p1 = RooArgSet(qPDF)
-    p2 = RooArgSet(zPDF)
-    p3 = RooArgSet(tPDF)
-    model.plotOn(frametop,RooFit.Components(p1),RooFit.LineWidth(2),RooFit.LineColor(kBlack),RooFit.LineStyle(kDashed))
-    frametop.GetXaxis().SetTitleSize(0)
-    frametop.GetXaxis().SetLabelSize(0)
-    frametop.GetYaxis().SetLabelSize(0.035)
-    frametop.GetYaxis().SetTitleSize(0.055)
-    frametop.GetYaxis().SetTitleOffset(1.5);
-    frametop.GetYaxis().SetTitle("Events / %.1f GeV"%(opts.dX[0]*10))
-   # if "6" in title:
-    frametop.Draw()
-    gPad.Update()
-    
-    ndf = int((opts.X[1]-opts.X[0])/(opts.dX[0])) - (n_param)
-    chi2=chi2_val/ndf
-    prob = ROOT.TMath.Prob(chi2_val,ndf)
-# part 2
-    pad = TPad("pad","pad",0.,0.,1.,1.)
-    pad.SetTopMargin(0.7)
-    pad.SetFillStyle(-1)
-    pad.SetBorderSize(0)
-   # if "6" in title:
-    pad.Draw()
-    pad.cd(0)
-    framebot.addPlotable(rhres,"p")
-    framebot.GetYaxis().SetTitle("Pulls")
-    framebot.GetXaxis().SetTitle("M_{bb} (GeV)")
-    framebot.GetYaxis().SetLabelSize(0.03)
-    framebot.GetYaxis().SetTitleSize(0.04)
-    line = ROOT.TLine(opts.X[0],0,opts.X[1],0)
-    line.SetLineStyle(7)
-    line.SetLineWidth(2)
-    i = n_param
-    line.SetLineColor(kRed+i)
-    framebot.addObject(line)
-
-    L00 = TLegend(0.7,0.6,1.-gStyle.GetPadRightMargin()-gStyle.GetPadTopMargin()*0.3333,1.-gStyle.GetPadTopMargin()*1.3333)
-    L00.SetFillColor(-1)
-    L00.SetBorderSize(0)
-    L00.SetTextFont(42)
-    L00.SetTextSize(gStyle.GetPadTopMargin()*0.60)
-    L00.SetY1(L00.GetY2()-L00.GetNRows()*gStyle.GetPadTopMargin()*0.95)
-   # if "6" in title:
-    L00.Draw()
-    framebot.addObject(L00)
-
-
-####################################################################################################
 def main():
 # Parse options
     mp = parser()
@@ -174,6 +104,7 @@ def main():
 #    fTF = json.loads(filecontent("%s/vbfHbb_transfer_2016_run2_linear.json"%basepath))
     LUMI = opts.LUMI
     NBINS = [int((opts.X[1]-opts.X[0])/(x)) for x in opts.dX] 
+    print("NBINS: %s"%NBINS)
     MASS=125
 
 # Files
@@ -210,10 +141,16 @@ def main():
     pCMS2.AddText("L = 35.9 fb^{-1} (13 TeV)")
     c0 = TCanvas("can","can",600,600)
 
+### WHICH CATEGORY TO ANALYZE
+    my_cat = 7
 # Selection loop
 #    for iS,S in enumerate(SC.selections):
 ## Load tree
-    fin = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_double_trignone_v25_VBF_newReg.root","read")
+    if my_cat < 4:
+        fin = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_double_trignone_v25_VBF_newReg.root","read")
+    else:
+        fin = TFile.Open("/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/VBFHbb2016/inputs/FitVBF_BTagCSV_analysis_single_trignone_v25_VBF_newReg.root","read")
+        
     T = fin.Get("VBF/events")
 ## Containers
     brn          = {}
@@ -229,9 +166,11 @@ def main():
 #    transfer     = {}
     zPDF,tPDF,qPDF,sPDF = {},{},{},{}
     yZ,yT,yQ     =  {} ,{},{}
-    can2 = TCanvas("can2_funcs","can2_funcs",600,600)
+    can2 = TCanvas("cat%d_funcs_diff"%(my_cat),"cat%d_funcs_diff"%(my_cat),600,600)
     iS = 0
     S = SC.selections[0]
+    if my_cat > 3:
+        S = SC.selections[1]
     for order in range(3, 7):
         N = "Pol%d"%order       
         n_param = order 
@@ -239,16 +178,18 @@ def main():
         print("starting func %s"%func)
 ## Category loop
         #for C in range(S.ncat):
-        for C in range(2, 3):
-            Cp = 2
+        for C in range(my_cat, my_cat+1):
+            Cp = C%4
+            if C == 8:
+                Cp = 4
 #### Start of RooFit part 
   ## x
             for i in range(3, order):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("beginning of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
-            x[N] = RooRealVar("mbbReg_CAT%d"%Cp,"mbbReg_CAT%d"%Cp,opts.X[0],opts.X[1])
-            x_name[N]="mbbReg_CAT%d"%Cp
+                #print("beginning of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
+            x[N] = RooRealVar("mbbReg_CAT%d"%C,"mbbReg_CAT%d"%C,opts.X[0],opts.X[1])
+            x_name[N]="mbbReg_CAT%d"%C
             trans_p = {}
 
   ### QCD part
@@ -256,8 +197,10 @@ def main():
             h[N]   = TH1F("hMbb_%s"%N,"hMbb_%s"%N,NBINS[iS],opts.X[0],opts.X[1])
             hb[N]  = TH1F("hMbb_blind_%s"%N,"hMbb_blind_%s"%N,NBINS[iS],opts.X[0],opts.X[1])
       ### Define cut
-            cut    = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f)"%(S.boundaries[C],S.boundaries[C+1]))
-            cutB   = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f) && mbbRegFSR>100 && mbbRegFSR<150"%(S.boundaries[C],S.boundaries[C+1]))
+            cut    = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f)"%(S.boundaries[Cp],S.boundaries[Cp+1]))
+            cutB   = TCut("(bdt_VBF>%1.4f && bdt_VBF<=%1.4f) && mbbRegFSR>100 && mbbRegFSR<150"%(S.boundaries[Cp],S.boundaries[Cp+1]))
+            print("C=%d, Cp=%d, cut=%s, cutB=%s"%(C, Cp, cut, cutB))
+            print("Cat = %d, Cp = %d, cut = %s, cutB = %s"%(C, Cp, cut, cutB))
       ### Draw
             c0.cd()
                         #c0.SetLogy()
@@ -266,110 +209,88 @@ def main():
             T.Draw("mbbRegFSR>>%s"%(hb[N].GetName()),cutB)
          #   c0.SaveAs(N+"Btest.png")
       ### Yields
-            Y[N]   = RooRealVar("yield_data_CAT%d"%Cp,"yield_data_CAT%d"%Cp,h[N].Integral())
-            print("h[n] integral: " + str(h[N].Integral()))
+            Y[N]   = RooRealVar("yield_data_CAT%d"%C,"yield_data_CAT%d"%C,h[N].Integral())
+            #print("h[n] integral: " + str(h[N].Integral()))
       ### Histograms
-            rh[N]  = RooDataHist("data_hist_CAT%d"%Cp,"data_hist_CAT%d"%Cp,RooArgList(x[N]),h[N])
-            rhb[N] = RooDataHist("data_hist_blind_CAT%d"%Cp,"data_hist_blind_CAT%d"%Cp,RooArgList(x[N]),hb[N])
-            h_data = rh[N].createHistogram('h_data',x[N])
+            rh[N]  = RooDataHist("data_hist_CAT%d"%C,"data_hist_CAT%d"%C,RooArgList(x[N]),h[N])
+            rhb[N] = RooDataHist("data_hist_blind_CAT%d"%C,"data_hist_blind_CAT%d"%C,RooArgList(x[N]),hb[N])
+#            h_data = rh[N].createHistogram('h_data',x[N])
   ### Model
             for i in range(3, order):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("middle0 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
+                #print("middle0 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
 #                if Cp==4 :  gcs_aux[:]=[]
             gcs_aux[N] = []
           #  val140 = h[N].GetBinContent(NBINS[iS]/2)
             for i in range(3, order):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("middle1/4 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
-            [qcd_pdf[N],params[N]] = generate_pdf(x[N], pdf_name=func,x_name=x_name[N],selection=double,gcs=gcs_aux[N],real_cat=2) #, val140=val140) 
-     #       print("Just after call to generate_pdf, gcs_aux: %s"%gcs_aux)
+                #print("middle1/4 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
+            [qcd_pdf[N],params[N]] = generate_pdf(x[N], pdf_name=func,x_name=x_name[N],selection=double,gcs=gcs_aux[N],real_cat=my_cat) #, val140=val140) 
+     #       #print("Just after call to generate_pdf, gcs_aux: %s"%gcs_aux)
             if qcd_pdf[N] == None : 
                 sys.exit("qcd_pdf = None !!!!!!!!!!!!!!!!!")
     
             for i in range(3, order):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("middle1/2 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
+                #print("middle1/2 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
       ### PDFs
-            zPDF[N] = wBKG.pdf("Z_model_CAT%d"%Cp)
-            tPDF[N] = wBKG.pdf("Top_model_CAT%d"%Cp)
-            sPDF[N] = wSIG.pdf("signal_model_mH%d_sel%s_CAT%d"%(MASS,S.tag,Cp))
+            zPDF[N] = wBKG.pdf("Z_model_CAT%d"%C)
+            tPDF[N] = wBKG.pdf("Top_model_CAT%d"%C)
+            sPDF[N] = wSIG.pdf("signal_model_mH%d_sel%s_CAT%d"%(MASS,S.tag,C))
 
       ### Yields
-            yZ[N]    = wBKG.var("yield_ZJets_CAT%d"%Cp)
-            yT[N]    = wBKG.var("yield_Top_CAT%d"%Cp)
+            yZ[N]    = wBKG.var("yield_ZJets_CAT%d"%C)
+            yT[N]    = wBKG.var("yield_Top_CAT%d"%C)
             yq_est = h[N].Integral()
-            yQ[N]    = RooRealVar("yield_QCD_CAT%d"%Cp,"yield_QCD_CAT%d"%Cp,yq_est,yq_est/2.,2*yq_est)
+            yQ[N]    = RooRealVar("yield_QCD_CAT%d"%C,"yield_QCD_CAT%d"%C,yq_est,yq_est/2.,2*yq_est)
             yZ[N].setConstant(kTRUE)
             yT[N].setConstant(kTRUE)
 
             for i in range(3, order):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("middle1 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
+                #print("middle1 of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
 
   ### Combined model
 #            model[N] = RooAddPdf("bkg_model_CAT%d"%(Cp),"bkg_model_CAT%d"%(Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N]))
             yQ[N].setConstant(kTRUE)
             #print("before: yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
-            print 'before: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
-            model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),"bkg_model_%s_CAT%d"%(opts.TF[iS],Cp),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N])) 
+            #print 'before: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            model[N] = RooAddPdf("bkg_model_%s_CAT%d"%(opts.TF[iS],C),"bkg_model_%s_CAT%d"%(opts.TF[iS],C),RooArgList(zPDF[N],tPDF[N],qcd_pdf[N]),RooArgList(yZ[N],yT[N],yQ[N])) 
   ### Fit
       #      print("Just before call to fitTo, gcs_aux: %s"%gcs_aux)
             res[N]   = model[N].fitTo(rh[N],RooFit.Save(),RooFit.Warnings(ROOT.kTRUE))
-            print 'kTrue: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            #print 'kTrue: Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
             yQ[N].setConstant(kFALSE)
             res[N]   = model[N].fitTo(rh[N],RooFit.Save(),RooFit.Warnings(ROOT.kTRUE))
             #print("kfalse:yZ=%s yT=%s yQ=%s"%(yZ[N], yT[N], yQ[N]))
-            print 'kFalse:Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            #print 'kFalse:Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
 
-            print("model[%s] = %s" %(N, model[N]))
+            #print("model[%s] = %s" %(N, model[N]))
             for i in range(3, order+1):
                 poln = "Pol%d"%i
                 chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-                print("end of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
-            #chi2 = RooChi2Var("chi2", "chi2", model[N], rh[N])
-            #chi2_val = chi2.getVal()
-#            print("chi2 of the fit for %s: %f"%(N, chi2_val))
+                #print("end of cat loop order %d, chi2 value for %s is %f"%(order, poln, chi2.getVal()))
             chi2 = RooChi2Var("chi2", "chi2", model[N], rh[N])
             chi2_val = chi2.getVal()
-#            print("chi2 of the fit for %s: %f"%(N, chi2_val))
-            print 'Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
+            #print 'Yields Z,Top,QCD: ', yZ[N].getVal(),yT[N].getVal(),yQ[N].getVal()
             total_fitted_yield = yZ[N].getVal()+yT[N].getVal()+yQ[N].getVal()
             h_data = rh[N].createHistogram('h_data',x[N])
-            print "h_data_integral=%.3f"%(h_data.Integral())
+            #print "h_data_integral=%.3f"%(h_data.Integral())
             ks=0
-            print 'KS probability = ',ks
+            #print 'KS probability = ',ks
 
-  ### Draw
            # chi2 = RooChi2Var("chi2", "chi2", model[N], rh[N])
            # chi2_val = chi2.getVal()
            # print("chi2 of the fit for %s: %f"%(N, chi2_val))
-            rh[N]  = RooDataHist("data_hist_CAT%d"%Cp,"data_hist_CAT%d"%Cp,RooArgList(x[N]),h[N].Rebin(10))            
-            #find chi2 again to make sure it didn't change 
-#            chi2 = RooChi2Var("chi2", "chi2", model[N], rh[N])
-#            chi2_val = chi2.getVal()
-#            print("chi2 of the fit for %s: %f"%(N, chi2_val))
-            #RooDraw(opts,can2,C,S,x,rh[N],model[N],qcd_pdf[N],zPDF[N],tPDF[N],archive,chi2_val,n_param,func,ks,iS)
-#            model[N].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(order-1)) #red
- #           can2.cd(0)
-
-  ### Reset constant settings
-           # for ib in range(n_param): 
-           #     if C==0 :
-           #         gcs_aux[ib].setConstant(kFALSE if opts.forfit else kTRUE)  ## false for final fit, true if fixed)
-  ### Saving
-#            for o in [rh[N],rhb[N],model[N],Y[N]]:
-#                getattr(w,'import')(o,RooFit.RenameConflictNodes("(1)"))
-#                if opts.verbosity>0 and not opts.quiet: o.Print()
-
-
-###
+#            rh[N]  = RooDataHist("data_hist_CAT%d"%C,"data_hist_CAT%d"%C,RooArgList(x[N]),h[N].Rebin(10))            
 ###--- end of CAT loop
-    print("models: %s"%model)
+    #print("models: %s"%model)
+    #how many bins to use for the fitted histogram
+    nbins = 120
     #now plot the four curves.
     pCMS1.Draw()
     pCMS2.Draw()
@@ -382,21 +303,86 @@ def main():
     for i in range(3, 7):
         poln = "Pol%d"%i
         chi2 = RooChi2Var("chi2", "chi2", model[poln], rh[poln])
-        print("AFTER CAT LOOP, CHI2 VALUE FOR %s IS %f"%(poln, chi2.getVal()))
+        #print("AFTER CAT LOOP, CHI2 VALUE FOR %s IS %f"%(poln, chi2.getVal()))
+    #need to get error for each of the fits, also plot just the qcd and not the other backgrounds.
     frametop = x["Pol3"].frame()
-    framebot = x["Pol3"].frame()
-    rh["Pol3"].plotOn(frametop)
-    model["Pol3"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(2)) #red
-#    rh["Pol4"].plotOn(frametop)
-    model["Pol4"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(3)) #green
-#    rh["Pol5"].plotOn(frametop)
-    model["Pol5"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(4)) #blue  
-#    rh["Pol6"].plotOn(frametop)
-    model["Pol6"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(5)) #yellow
-    print("model after plotting:")
+#    framebot = x["Pol3"].frame()
+#    rh["Pol3"].plotOn(frametop)
+#    model["Pol3"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(2)) #red
+##    rh["Pol4"].plotOn(frametop)
+#    model["Pol4"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(3)) #green
+##    rh["Pol5"].plotOn(frametop)
+#    model["Pol5"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(4)) #blue  
+##    rh["Pol6"].plotOn(frametop)
+#    model["Pol6"].plotOn(frametop,RooFit.LineWidth(2), RooFit.LineColor(5)) #yellow
+   # print("model after plotting:")
     model["Pol6"].Print()
-    print("fit result:")
+    #print("fit result:")
     res["Pol6"].Print()
+
+    #histogram of the Pol4 fit
+    pol4_fitHist = model["Pol4"].createHistogram(x["Pol4"].GetName(), nbins)
+    #histogram of the Pol6 fit
+    pol6_fitHist = model["Pol6"].createHistogram(x["Pol6"].GetName(), nbins)
+    #histogram of the Z background data
+    Z_hist = zPDF["Pol4"].createHistogram(x["Pol4"].GetName(), nbins)
+    #histogram of the top background data
+    top_hist = tPDF["Pol6"].createHistogram(x["Pol6"].GetName(), nbins)
+    #don't worry, x["Pol4"] and x["Pol6"] have the same name (mbbreg...CAT[my_cat] or whatever)
+    #histogram of the data (just need to convert from RooDataHist to TH1F)
+    dat_hist = rh["Pol4"].createHistogram(x["Pol4"].GetName(), nbins)
+    pol4_fitHist.Print()
+    pol6_fitHist.Print()
+    Z_hist.Print()
+    top_hist.Print()
+    dat_hist.Print()
+    x_vals = [0 for i in range(nbins)]
+    p4_dat = [0 for i in range(nbins)]
+    p4_err = [0 for i in range(nbins)]
+    p6_dat = [0 for i in range(nbins)]
+    p6_err = [0 for i in range(nbins)]
+    datapt = [0 for i in range(nbins)]
+    daterr = [0 for i in range(nbins)]
+    for i in range(1, nbins+1):
+        x_vals[i-1] = pol4_fitHist.GetBinCenter(i)
+        pol4_val = pol4_fitHist.GetBinContent(i)
+        pol6_val = pol6_fitHist.GetBinContent(i)
+        z_val = Z_hist.GetBinContent(i)
+        top_val = top_hist.GetBinContent(i)
+        data_val = dat_hist.GetBinContent(i)
+        #subtract Z and top to get actual values for qcd.
+        print("boutta set datapt: data_val=%f, z_val=%f, top_val=%f"%(data_val, z_val, top_val))
+        p6_dat[i-1] = pol6_val - z_val*yZ["Pol3"].getVal() - top_val*yT["Pol3"].getVal()
+        #subtract off the pol6 value for this plot.
+        datapt[i-1] = data_val - z_val*yZ["Pol3"].getVal() - top_val*yT["Pol3"].getVal() - p6_dat[i-1]
+        p4_dat[i-1] = pol4_val - z_val*yZ["Pol3"].getVal() - top_val*yT["Pol3"].getVal() - p6_dat[i-1]
+        p6_dat[i-1] = 0
+        #also need errors
+        daterr[i-1] = dat_hist.GetBinError(i)
+        p4_err[i-1] = pol4_fitHist.GetBinError(i)
+        p6_err[i-1] = pol6_fitHist.GetBinError(i)
+
+    #now convert lists to arrays so they can be plotted easily
+    x_varr = array("f", x_vals)
+    p4_arr = array("f", p4_dat)
+    p4earr = array("f", p4_err)
+    p6_arr = array("f", p6_dat)
+    p6earr = array("f", p6_err)
+    datarr = array("f", datapt)
+    dtearr = array("f", daterr)
+    #xerr is 0 but is a required argument for the TGraph constructor for some stupid ass reason
+    xerr = array('f', [0 for i in range(nbins)])
+
+    #now plot these bois (with error of course)
+    #pol4 graph
+    print("x_varr: %s \n p4_arr: %s \n p4earr:%s \n lengths: %d, %d, %d"%(x_varr, p4_arr, p4earr, len(x_varr), len(p4_arr), len(p4earr)))
+    print("x_varr: %s \n datarr: %s \n dtearr:%s \n lengths: %d, %d, %d"%(x_varr, datarr, dtearr, len(x_varr), len(p4_arr), len(p4earr)))
+    grp4 = TGraphErrors(nbins, x_varr, p4_arr, xerr, p4earr)
+    #pol6 graph
+    grp6 = TGraphErrors(nbins, x_varr, p6_arr, xerr, p6earr)
+    #data graph
+    grdt = TGraphErrors(nbins, x_varr, datarr, xerr, dtearr)
+    
     
 #plot qcd also
 #plot normalized by yield
@@ -410,6 +396,65 @@ def main():
    # p2 = RooArgSet(zPDF)
    # p3 = RooArgSet(tPDF)
     #model.plotOn(frametop,RooFit.Components(p1),RooFit.LineWidth(2),RooFit.LineColor(kBlack),RooFit.LineStyle(kDashed))
+    
+    ndf = int((opts.X[1]-opts.X[0])/(opts.dX[0])) - (n_param)
+    chi2=chi2_val/ndf
+    prob = ROOT.TMath.Prob(chi2_val,ndf)
+# part 2
+    pad = TPad("pad","pad",0.,0.,1.,1.)
+#    pad.SetTopMargin(0.7)
+    pad.SetFillStyle(-1)
+    pad.SetBorderSize(0)
+    pad.Draw()
+    pad.cd(0)
+#    framebot.addPlotable(rhres,"p")
+#    framebot.GetYaxis().SetTitle("Pulls")
+#    framebot.GetXaxis().SetTitle("M_{bb} (GeV)")
+#    framebot.GetYaxis().SetLabelSize(0.03)
+#    framebot.GetYaxis().SetTitleSize(0.04)
+#    line = ROOT.TLine(opts.X[0],0,opts.X[1],0)
+#    line.SetLineStyle(7)
+#    line.SetLineWidth(2)
+    i = n_param
+#    line.SetLineColor(kRed+i)
+#    framebot.addObject(line)
+
+#    framebot.addObject(L00)
+#    pave = TPaveText(0.75,0.7,0.9,0.9,"NDC")
+#    pave.SetTextAlign(11)
+#    pave.SetFillStyle(-1)
+#    pave.SetBorderSize(0)
+#    pave.SetTextFont(42)
+#    pave.SetTextSize(gStyle.GetPadTopMargin()*0.60)
+#    for i in range(4, 7, 2):
+#        pave.AddText("Pol%d"%i) 
+#        pave.GetListOfLines().Last().SetTextColor(i-1);
+#    pave.Draw()
+    #frametop.addObject(pave)
+#    grdt.SetFillColor(6);
+    grdt.SetMarkerStyle(7)
+#    grdt.SetMarkerSize(2)
+    #grdt.SetFillStyle(3005);
+#    grdt.GetYaxis().SetRangeUser(41000, 45000) 
+#    grdt.GetXaxis().SetRangeUser(120, 130) 
+    grdt.GetXaxis().SetTitleSize(.055)
+    grdt.GetXaxis().SetLabelSize(.035)
+    grdt.GetYaxis().SetLabelSize(0.035)
+    grdt.GetYaxis().SetTitleSize(0.055)
+    grdt.GetYaxis().SetTitleOffset(1.5);
+    grdt.GetYaxis().SetTitle("Events / %.1f GeV"%(opts.dX[0]*10))
+    grdt.GetXaxis().SetTitle("M_{bb} (GeV)")
+    grdt.Draw("same APE0")
+    #grdt.SetLineColor(kBlack)
+    grp4.Draw("same ce4")
+    grp4.SetLineColor(kBlue)
+    grp4.SetFillColor(kBlue)
+    grp4.SetFillStyle(3005)
+    grp6.Draw("same ce4")
+    grp6.SetLineColor(kRed)
+    grp6.SetFillColor(kRed)
+    grp6.SetFillStyle(3005)
+
     frametop.GetXaxis().SetTitleSize(.055)
     frametop.GetXaxis().SetLabelSize(.035)
     frametop.GetYaxis().SetLabelSize(0.035)
@@ -417,58 +462,39 @@ def main():
     frametop.GetYaxis().SetTitleOffset(1.5);
     frametop.GetYaxis().SetTitle("Events / %.1f GeV"%(opts.dX[0]*10))
     frametop.GetXaxis().SetTitle("M_{bb} (GeV)")
-    frametop.Draw()
+  #  frametop.Draw("same")
     gPad.Update()
-    
-    ndf = int((opts.X[1]-opts.X[0])/(opts.dX[0])) - (n_param)
-    chi2=chi2_val/ndf
-    prob = ROOT.TMath.Prob(chi2_val,ndf)
-# part 2
-    pad = TPad("pad","pad",0.,0.,1.,1.)
-    pad.SetTopMargin(0.7)
-    pad.SetFillStyle(-1)
-    pad.SetBorderSize(0)
-    pad.Draw()
-    pad.cd(0)
-#    framebot.addPlotable(rhres,"p")
-    framebot.GetYaxis().SetTitle("Pulls")
-    framebot.GetXaxis().SetTitle("M_{bb} (GeV)")
-    framebot.GetYaxis().SetLabelSize(0.03)
-    framebot.GetYaxis().SetTitleSize(0.04)
-    line = ROOT.TLine(opts.X[0],0,opts.X[1],0)
-    line.SetLineStyle(7)
-    line.SetLineWidth(2)
-    i = n_param
-    line.SetLineColor(kRed+i)
-    framebot.addObject(line)
+    print("drew my bois")
 
-    L00 = TLegend(0.7,0.6,1.-gStyle.GetPadRightMargin()-gStyle.GetPadTopMargin()*0.3333,1.-gStyle.GetPadTopMargin()*1.3333)
-    L00.SetFillColor(-1)
-    L00.SetBorderSize(0)
+    #L00 = TLegend(0.7,0.6,1.-gStyle.GetPadRightMargin()-gStyle.GetPadTopMargin()*0.3333,1.-gStyle.GetPadTopMargin()*1.3333)
+    L00 = TLegend(0.75,0.85,1.0,1.0)
+    L00.SetFillColor(0)
+    L00.SetLineColor(1)
+    L00.SetBorderSize(10)
     L00.SetTextFont(42)
-    L00.SetTextSize(gStyle.GetPadTopMargin()*0.60)
-    L00.SetY1(L00.GetY2()-L00.GetNRows()*gStyle.GetPadTopMargin()*0.95)
+    L00.SetTextSize(gStyle.GetPadTopMargin()*0.50)
+#    L00.SetY1(L00.GetY2()-L00.GetNRows()*gStyle.GetPadTopMargin()*0.95)
    # if "6" in title:
-    L00.Draw()
-    framebot.addObject(L00)
-    pave = TPaveText(0.75,0.7,0.9,0.9,"NDC")
-    pave.SetTextAlign(11)
-    pave.SetFillStyle(-1)
-    pave.SetBorderSize(0)
-    pave.SetTextFont(42)
-    pave.SetTextSize(gStyle.GetPadTopMargin()*0.60)
-    for i in range(3, 7):
-        pave.AddText("Pol%d"%i) 
-        pave.GetListOfLines().Last().SetTextColor(i-1);
-    pave.Draw()
-    framebot.addObject(pave)
+    L00.AddEntry(grp4, "Pol4 - Pol6", 'l')
+    L00.AddEntry(grp6, "Pol6 - Pol6", 'l')
+    L00.AddEntry(grdt, "data-Z-top-Pol6", 'p')
+#    L00.AddEntry(dat_hist, "data", 'p')
+    dat_hist.SetMarkerStyle(7)
+    dat_hist.SetMarkerColor(kGreen)
+    #draw raw data (without subtracting other background)
+    #dat_hist.Draw("same pe")
+    L00.Draw("same")
+    print("drew legend")
     #now save canvas to file so can view.
     makeDirs("%s/plot/draw_funcs/"%opts.workdir)
     can2.SaveAs("%s/plot/draw_funcs/%s.pdf"%(opts.workdir,can2.GetName()))
     can2.SaveAs("%s/plot/draw_funcs/%s.png"%(opts.workdir,can2.GetName()))
 
+    print("saved my boi")
+    sys.exit(0)
+
     #PLOTTING RATIO OF POL6 / POL4 NOW
-    canrat = TCanvas("cat2_Pol6_4_ratio","cat2_Pol6_4_ratio",600,600)
+    canrat = TCanvas("cat%d_Pol6_4_ratio"%my_cat,"cat%d_Pol6_4_ratio"%my_cat,600,600)
     canrat.cd()
     pCMS1.Draw()
     pCMS2.Draw()
@@ -476,85 +502,128 @@ def main():
     canrat.SetFillColor(0)
     canrat.SetFillStyle(-1)
     nevents = 13142089 #from root file opened earlier
-    print("*****************Pol6 fit values:")
+    #print("*****************Pol6 fit values:")
 #    print("res: %s"%res["Pol6"].printArgs())
     coefs = res["Pol6"].floatParsFinal()
     varNarrow = RooRealVar("varNar", "varNar", 100, 99, 101)
     setNarrow = RooArgSet()
     setNarrow.add(varNarrow)
     valNarrow = model["Pol6"].getVal(setNarrow)
-    print("***GetVal (narrow range) result: %f" %valNarrow)
-    xname = x["Pol6"].GetName()
-    fitHist = model["Pol6"].createHistogram(xname, 20)
-    fitHist.Print()
-    fitHist2 = model["Pol3"].createHistogram(xname, 20)
-    fitHist2.Print()
-    for i in range(20):
-        print("%f \t %f \t %f" %(fitHist.GetBinContent(i), fitHist2.GetBinContent(i), fitHist.GetBinError(i)) )
-    print("Integral: " + str(fitHist.Integral()))
+    #print("***GetVal (narrow range) result: %f" %valNarrow)
+    x6name = x["Pol6"].GetName()
+    fitHist6 = model["Pol6"].createHistogram(x6name, nbins)
+    fitHist6.Print()
+    x4name = x["Pol4"].GetName()
+    fitHist4 = model["Pol4"].createHistogram(x4name, nbins)
+    fitHist4.Print()
+    ratio64 = fitHist6.Divide(fitHist4) #ratio64 is only a bool for some reason (ratio his is still in fitHist6)
     
-    #final fit parameters for Pol6, to be used to calculate ratio
-    final_params_6 = []
-    for i in range(8):
-        param = coefs.at(i)
-        print("parameter %d is %s"%(i, param))
-        final_params_6.append(param.getValV())
-    print("FINAL PARAMS: %s"%final_params_6)
-    #x values (will be in range 80-220 GeV)
-    xvals = []
-    #corresponding values of the Pol6
-    val6s = []
-    #debugging: are these parameters correct?
-    mycalcs = []
-    #j is to count the number of entries.
-    j = 0
-    for mass in range(85, 196, 10):
-        cheby = [1 for k in range(8)]
-        cheby[1] = mass
-        mycalcs.append(0)
-        for k in range(2, 7):
-            cheby[k] = 2*mass*cheby[k-1] - cheby[k-2]
-        #value of Pol6 at this x value
-        xvals.append(mass)
-   #     val6s.append(1)
-        #need to use the correct chebychev polynomial
-        # defined as T0(x)=1, T1(x)=x, Tn+1(x)=2xTn(x)-Tn-1(x)
-#        cheby = [1 for i in range(8)]
-        #for some godforsaken reason the coeffs start with 1 instead of 0 (0 has to be 1???)
-#        for i in range(1, 8):
-#            if i == 1: cheby[i] = mass
-#            else: cheby[i] = 2*mass*cheby[i-1] - cheby[i-2]
-#            addval = final_params_6[i-1]*cheby[i]
-#            print("mass=%f, i=%d, adding value %f"%(mass, i, addval))
-#            val6s[j] += addval
-        print(final_params_6)
-        #val6s.append( ROOT.Math.Chebyshev6(mass, final_params_6[0], final_params_6[1], final_params_6[2],final_params_6[3],final_params_6[4],final_params_6[5],final_params_6[6]))
-        #first parameter is 'implicitly' assumed to be 1 for some reason?
-        val6s.append( ROOT.Math.Chebyshev6(mass, final_params_6[0], final_params_6[1], final_params_6[2],final_params_6[3],final_params_6[4],final_params_6[5], final_params_6[6]) / final_params_6[7])
-        print("mass=%f, val6=%f"%(mass, val6s[j]))
-        #last parameter is normalization for the whole func (I think) or maybe not
-#        val6s[j] *= final_params_6[6]
-        j += 1
-    print("final_params_6=%s, j=%d, xvals=%s, val6s=%s"%(str(final_params_6), j, xvals, val6s))
-    #now convert lists to 'arrays' so pyroot can understand it with its low IQ
-    xs = array('f', xvals)
-    y6 = array('f', val6s)
-    print("val6s: %s \n y6: %s"%(str(val6s), str(y6)))
-#    mc = array('f', mycalcs)
-    graphRat = TGraph(j, xs, y6)
-#    graphMc = TGraph(j, xs, mc)
-    graphRat.GetXaxis().SetTitle("m_{bb} (GeV)")
-    graphRat.GetYaxis().SetTitle("Ratio Pol6 / Pol4")
-    graphRat.Draw("AC")
-    #plot the RooFitResult res instead of the model
-#    frameRat = x["Pol6"].frame()
-#    res["Pol6"].plotOn(frameRat, ) #pink
-
-#    graphMc.Draw("same")
-    graphRat.Paint()
+    frameboi = x["Pol4"].frame()
+    #draw ratio histogram with axes, curve style, with error bars.
+    frameboi.GetXaxis().SetTitle("m_{bb} (GeV)")
+    frameboi.GetYaxis().SetTitle("Ratio Pol6 / Pol4")
+    frameboi.SetAxisRange(0.95, 1.05, "Y")  
+    frameboi.Draw()
+    fitHist6.Draw("same AC") #add "E" for error bars (they'll prolly be hella big)
     canrat.Modified()
     canrat.Update()
+
     canrat.SaveAs("%s/plot/draw_funcs/%s.pdf"%(opts.workdir, canrat.GetName()))
+
+    #NOW PLOTTING TOY RATIO THINGY
+    #now get toy, and divide the fits by it
+    toy_path = "/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/bias_studies/cat%d/noSysFit/Pol6_Pol4/fitDiagnostics_0_0.root"%my_cat
+    #if toy doesn't exist yet then create it.
+    if not os.path.exists(toy_path):
+        os.system("cd /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/bias_studies/cat%d/noSysFit/Pol6_Pol4;"%(my_cat) \
+            + " eval `scramv1 runtime -sh`;" \
+            + " combine -M GenerateOnly --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0 --X-rtd FITTER_NEW_CROSSING_ALGO --toysNoSystematics  -t 1 --expectSignal 1.0 --saveToys  --rMin=-100 --rMax=100 -n _0 --seed=679 /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/datacards/datacard_vbfHbb_biasPol6_m125_CAT%d-CAT%d_CATveto.txt;"%(my_cat, my_cat) \
+            + " combine -M FitDiagnostics --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0 --X-rtd FITTER_NEW_CROSSING_ALGO -t 1 --saveShapes --seed=-1 -v 0 --expectSignal=1.0 --robustFit=1 --rMin=-100 --rMax=100 --toysFile higgsCombine_0.GenerateOnly.mH120.679.root -n _0_0 --setRobustFitTolerance 0.01  -S 0  -d /afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/VBFHbb2016/VBF_combine/toolkit/src/test_for_bennett/datacards/datacard_vbfHbb_biasPol4_m125_CAT%d-CAT%d_CATveto.txt"%(my_cat, my_cat)   )
+    toy = TFile.Open(toy_path, "read")
+    qcd = toy.Get("shapes_fit_s/CAT%d/qcd"%my_cat)
+    print("obtained qcd:")
+    qcd.Print()
+    fitHist4.Print()
+    #Now will divide Pol4 fitHist by the toy hist.
+    #but need to rebin first so that the to hists have the same number of bins.
+    #argument for rebin method is ngroups instead of new nbins for some reason.
+    #also need to normalize by number of entries in each histogram.
+    nent_toy = qcd.GetEntries()
+    nent_hist = fitHist4.GetEntries()
+    #c1 is additional, normalization argument to multiply first histogram, c2 for second hist.
+    c1 = 1.0 / nent_hist
+    c2 = 1.0 / nent_toy 
+    print("nentries toy=%d, nentries fitHist=%d, c1=%f, c2=%f"%(nent_toy, nent_hist, c1, c2))
+    #x values to be plotted
+    xes = [0.0 for i in range(nbins)]
+    #y values (ratios) to be plotted
+    toyfit_ratio = [0.0 for i in range(nbins)]
+    #bin 0 is the overflow bin for some reason
+    for i in range(1, nbins+1):
+        fitHist_entry = fitHist4.GetBinContent(i)
+        #it's 10 times more bins in the toy histogram than in the data fitting one.
+        toyHist_entry = qcd.GetBinContent((i-1)*10+5)
+        if toyHist_entry != 0:
+            toyfit_ratio[i-1] = fitHist_entry / toyHist_entry
+        else:
+            toyfit_ratio[i-1] = 0
+            print("WARNING: bin %d has value 0 for toy histogram"%i)
+        xes[i-1] = fitHist4.GetBinCenter(i)
+        x2 = qcd.GetBinCenter((i-1)*10+5)
+        print("bin:%d xval: %f, x2: %f, fit val: %f, toy val: %f, ratio:%f"%(i, xes[i-1], x2, fitHist_entry, toyHist_entry, toyfit_ratio[i-1]))
+    #now print to file, exactly as before.
+    #print("fitHist4 after division:")
+    #fitHist4.Print()
+    cantoy = TCanvas("cat%d_toyPol6_fitPol4"%my_cat,"cat%d_toyPol6_fitPol4"%my_cat,600,600)
+    cantoy.cd()
+    pCMS1.Draw()
+    pCMS2.Draw()
+#    cantoy.SetTitle("toyPol6_fitPol4_ratio")
+#    cantoy.SetTitle("toyPol6_fitPol4_ratio")
+    cantoy.SetFillColor(0)
+    cantoy.SetFillStyle(-1)
+    frametoi = x["Pol4"].frame()
+    #draw ratio histogram with axes, curve style, with error bars.
+    frametoi.GetXaxis().SetTitle("m_{bb} (GeV)")
+    frametoi.GetYaxis().SetTitle("fit(Pol4)/toy(Pol6) [normalized]")
+    #frametoi.SetAxisRange(0.9, 1.1, "Y")  
+    frametoi.SetAxisRange(0, 30000, "Y")  
+    frametoi.Draw()
+
+    #fit_int = fitHist4.Integral()
+    #toy_int = qcd.Integral()
+    #scale the histograms so their integrals are the same
+    #fitHist4.Scale(1.0/fit_int)
+    #qcd.Scale(1.0/toy_int)    
+
+    fitHist4.SetLineColor(kBlue)
+    qcd.SetLineColor(kRed)
+    #fitHist4.Draw("same AC") #add "E" for error bars (they'll prolly be hella big)
+
+    qcd.Draw("same AC")
+    fitHist4.Draw("same AC")
+    
+    toyRatio = fitHist4.Clone("toyRatio")
+    toyRatio.SetLineColor(kBlack)
+    #convert lists to arrays so they can be plotted
+    x = array("f", xes)
+    tfr = array("f", toyfit_ratio)
+    ratGraph = TGraph(nbins, x, tfr)
+    ratGraph.Draw("same AC")
+    ratGraph.GetYaxis().SetRangeUser(0.95, 1.05)
+    ratGraph.GetXaxis().SetTitle("m_{bb} (GeV)")
+    ratGraph.GetYaxis().SetTitle("Ratio fit(Pol4)/toy(Pol6)")
+    ratGraph.GetYaxis().SetTitleSize(0.055)
+    ratGraph.GetYaxis().SetLabelSize(0.035)
+    ratGraph.GetXaxis().SetLabelSize(0.035)
+    ratGraph.GetXaxis().SetTitleSize(0.055)
+#    toyRatio.Divide(qcd)
+#    toyRatio.Draw("same AC")
+
+    cantoy.Modified()
+    cantoy.Update()
+
+    cantoy.SaveAs("%s/plot/draw_funcs/%s.pdf"%(opts.workdir, cantoy.GetName()))
 #
 #--- end of SEL loop
 #
