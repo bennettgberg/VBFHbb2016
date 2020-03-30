@@ -63,6 +63,8 @@ while i < len(sys.argv)-1 or len(sys.argv) == 2:
       spec_name = "/" + spec_name
     if spec_name[len(spec_name)-1] != "/":
       spec_name = spec_name + "/"
+  elif sys.argv[i] == "--expectSignal" or sys.argv[i] == "-e":
+    mu = sys.argv[i+1]
   else:
     if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
       print("Error! Unrecognized option %s." %sys.argv[i])
@@ -103,6 +105,12 @@ else:
   #  if os.path.exists(outname):
 #    outfile = open(outname)
     #10 different combine calls
+    #close then reopen the files every so often in case the process gets killed after 2 hours (fml)
+    if num % 50 == 49:
+        rfile.close()
+        rErrfile.close()
+        rfile = open("r.txt", "a")
+        rErrfile = open("rErr.txt", "a")
     for c in range(ncalls):
   #    filename = "../fitDiagnostics_" + str(num) + "_" + str(c) + ".root"
       filename = "/eos/user/b/bgreenbe/cat%d_%d%s/%s_%s/job%d/fitDiagnostics_%d_%d.root" %(catstart, catend, spec_name, gen_func, fit_func, num, num, c)
@@ -132,59 +140,63 @@ else:
 #  	  eof = True
 #          break
      # if eof: break
-      for i, event in enumerate(tree):
-        if i > ntoys: 
-          print("Error! more than %d events"%(ntoys))
-          break
-        #First make sure this is a valid toy.
-#        use_event = True
-  #     # print("Reading toy %d" %i)
-#        if not eof: out_text = outfile.readline() #next line after --FitDiagnostics--
-  #   # Do preliminary check for "Fit failed."
-  #      if "Fit failed." in out_text:
-  #        use_event = False
-  #        print("Error: Fit failed. Not using job %d toy %d" %(num, i))
-  #   # Now out_text is not --FitDiagnostics-- anymore.
-  #   # When --FitDiagnostics-- is found again, that's the start of the next event.
-  #   # Also need to account for eof: "mean" will be start of one of the last lines in the file--after every call!
-#        while " --- FitDiagnostics ---" not in out_text and out_text != "" and not eof: # and "mean" not in out_text: 
-#          out_text = outfile.readline()
-  #       # print(out_text)
-  #   #  If there's an error mssg or warning with this toy, discard it.
-#         ONLY if it says Error: Fit failed. or Error: Search did not converge. discard the toy.
-#          if "Error: search did not converge" in out_text or "Fit failed." in out_text:
-#            use_event = False
-  #        if "Error" in out_text: 
-  #        #only print error message again if it hasn't already been printed.
-  #          if use_event: 
-  #            print("Error! Not using job %d call %d toy %d" %(num, c, i))
-  #          use_event = False
-  #        elif "[WARNING]" in out_text:
-  #          if use_event:
-  #            print("WARNING! Not using job %d call %d toy %d" %(num, c, i))
-  #          use_event = False
-  #        elif "Fit failed." in out_text:
-  #          if use_event:
-  #            print("Error: Fit failed. Not using job %d call %d toy %d" %(num, c, i))
-  #          use_event = False
-  #      #If there was any type of error or warning, goto next event.
-#        if not use_event:
-#          print("Search did not converge. Skipping job %d call %d toy %d."%(num, c, i))
-#          continue
-        #get r value of this toy
-        #If it gets past here, the event is valid!
-        r[nevents] = event.r
-        rErr[nevents] = event.rErr
-     #  if rErr==0, throw away event
-        if rErr[nevents] == 0:
-          print("Error: rErr = 0, r = %f, num = %d, i = %d"%(r[nevents], num, i))
-  #        rErr = 0.0001
-          continue
-       #Ok at this point, the fit is successful and bias is finite, so toy is valid.
-       #write to output file to save time later.
-        rfile.write(str(r[nevents]) + "\n")
-        rErrfile.write(str(rErr[nevents]) + "\n")
-        nevents += 1
+    #using try/except to catch the stupid 'new version of root' error.
+      try:
+          for i, event in enumerate(tree):
+            if i > ntoys: 
+              print("Error! more than %d events"%(ntoys))
+              break
+            #First make sure this is a valid toy.
+    #        use_event = True
+      #     # print("Reading toy %d" %i)
+    #        if not eof: out_text = outfile.readline() #next line after --FitDiagnostics--
+      #   # Do preliminary check for "Fit failed."
+      #      if "Fit failed." in out_text:
+      #        use_event = False
+      #        print("Error: Fit failed. Not using job %d toy %d" %(num, i))
+      #   # Now out_text is not --FitDiagnostics-- anymore.
+      #   # When --FitDiagnostics-- is found again, that's the start of the next event.
+      #   # Also need to account for eof: "mean" will be start of one of the last lines in the file--after every call!
+    #        while " --- FitDiagnostics ---" not in out_text and out_text != "" and not eof: # and "mean" not in out_text: 
+    #          out_text = outfile.readline()
+      #       # print(out_text)
+      #   #  If there's an error mssg or warning with this toy, discard it.
+    #         ONLY if it says Error: Fit failed. or Error: Search did not converge. discard the toy.
+    #          if "Error: search did not converge" in out_text or "Fit failed." in out_text:
+    #            use_event = False
+      #        if "Error" in out_text: 
+      #        #only print error message again if it hasn't already been printed.
+      #          if use_event: 
+      #            print("Error! Not using job %d call %d toy %d" %(num, c, i))
+      #          use_event = False
+      #        elif "[WARNING]" in out_text:
+      #          if use_event:
+      #            print("WARNING! Not using job %d call %d toy %d" %(num, c, i))
+      #          use_event = False
+      #        elif "Fit failed." in out_text:
+      #          if use_event:
+      #            print("Error: Fit failed. Not using job %d call %d toy %d" %(num, c, i))
+      #          use_event = False
+      #      #If there was any type of error or warning, goto next event.
+    #        if not use_event:
+    #          print("Search did not converge. Skipping job %d call %d toy %d."%(num, c, i))
+    #          continue
+            #get r value of this toy
+            #If it gets past here, the event is valid!
+            r[nevents] = event.r
+            rErr[nevents] = event.rErr
+         #  if rErr==0, throw away event
+            if rErr[nevents] == 0:
+              print("Error: rErr = 0, r = %f, num = %d, i = %d"%(r[nevents], num, i))
+      #        rErr = 0.0001
+              continue
+           #Ok at this point, the fit is successful and bias is finite, so toy is valid.
+           #write to output file to save time later.
+            rfile.write(str(r[nevents]) + "\n")
+            rErrfile.write(str(rErr[nevents]) + "\n")
+            nevents += 1
+      except:
+          print("Error: new version of root or something stupid like that.")
 rfile.close()
 rErrfile.close()
 
@@ -198,7 +210,7 @@ pulls = dict()
 #now the arrays are all filled so we can go through them and fill the histogram.
 for i in range(nevents):
    #only accept toys with rErr > 11.5
-  pull =  (r[i]-1.0) / rErr[i]
+  pull =  (r[i]-float(mu)) / rErr[i]
 #  if abs( pull -  -2.20987595716) < 0.00001:
 #  if not rErr[i] > 12:
 #    print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
@@ -206,15 +218,15 @@ for i in range(nevents):
   if str(pull) in pulls: # and pulls[str(pull)] > 5:
     print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
     continue
-  if not str(pull) in pulls:
-    pulls[str(pull)] = 0
+#  if not str(pull) in pulls:
+  pulls[str(pull)] = 0
 #  pulls[str(pull)] += 1
   if pull == 0.0:
     print("Not using event %d out of %d: pull = %f" %(i, nevents, pull))
     continue
   real_nevents += 1
   mu_inj_avg += r[i]
-  hist_all.Fill((r[i]-1.0)/rErr[i])
+  hist_all.Fill((r[i]-float(mu))/rErr[i])
 #  hist_all.Fill(rErr[i])
  #hist_all.Fill(r[i])
  #hist_all.Fill(r[i], rErr[i])
@@ -232,8 +244,8 @@ mu_inj_avg /= real_nevents
 #rms =  hist_all.GetRMS()
 hist_all.SetStats(True)
 #hist_all.SetLineColor(1)
-#ymax=hist_all.GetMaximum()*1.1
-#hi"/afs/cern.ch/user/b/bgreenbe/private/CMSSW_8_1_0/src/HiggsAnalysis/lata_code/workdir/datacards/datacard_CAT0_Pol6.root"st_all.GetYaxis().SetRangeUser(0.,ymax)
+ymax=hist_all.GetMaximum()*1.1
+hist_all.GetYaxis().SetRangeUser(0.,ymax)
 #hist_all.Fit("gaus")
 #hist_final.GetFunction("gaus").SetParLimits(2,0,1);
 #hist_all.GetFunction("gaus").SetLineWidth(3);

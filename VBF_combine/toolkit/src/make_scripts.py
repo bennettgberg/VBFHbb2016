@@ -7,7 +7,7 @@ import sys
 def main():
 #Default values
         #How many toys in each combine call
-        ntoys=5
+        ntoys=1
         #How many times to call combine in a single job
         ncalls=10
         #How many jobs to run
@@ -35,6 +35,12 @@ def main():
 #        flavour = "workday"  
         #use only seven categories (exclude 0 and 4)?
         seven = False
+        #should 'saveShapes' option be used in combine fit call?
+        saveShapes = False
+        #how much signal strength to expect? (usually 1.0, except when running weird tests)
+        sig_strength = 1.0
+        #option of how to generate toys (usually either toysNoSystematics or toysFrequentist)
+        toy_gen = "toysNoSystematics"
 #parse input arguments to see if any default values are being replaced
         #only -h or --help is a valid option without a value after it
         if len(sys.argv) % 2 != 1 and len(sys.argv) != 2:
@@ -89,6 +95,16 @@ def main():
                         #don't use cats 0 and 4.
                         if sys.argv[i+1] == "1":
                             seven = True
+                elif sys.argv[i] == "--saveShapes" or sys.argv[i] == "-ss":
+                        #add saveShapes argument to combine fit calls (and only 1 toy is allowed)
+                        if sys.argv[i+1] == "1":
+                            saveShapes = True
+                            ntoys = 1
+                elif sys.argv[i] == "--expectSignal" or sys.argv[i] == "-e":
+                        #expected signal strength for the toys (1.0 by default)
+                        sig_strength = float(sys.argv[i+1])
+                elif sys.argv[i] == "--toyGen" or sys.argv[i] == "-tg":
+                        toy_gen = sys.argv[i+1]
                 else:
                         if not (sys.argv[i] == "--help" or sys.argv[i] == "-h"):
                                 print("Error! Unrecognized option %s." %sys.argv[i])
@@ -99,8 +115,10 @@ def main():
                         sys.exit(0)
                 i += 2
 #
+        if saveShapes and ntoys > 1:
+            sys.exit("Error: Only 1 toy per combine call is allowed with saveShapes option.\nEither remove 'saveShapes' or set --ntoys 1")
         #print selected options
-        #(total number of toys will be ntoys*ncalls*njobs
+        #(total number of toys will be ntoys*ncalls*njobs)
         totntoys = ntoys*ncalls*njobs
         print("Writing executables for %d total toys." %(totntoys))
         print("Generating function = %s, fitting function = %s" %(gen_func, fit_func))
@@ -194,7 +212,7 @@ def main():
                 #generate toys
 #old way: --toysFrequentist instead of toysNoSystematics
                         jobfile.write("combine -M GenerateOnly --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0 --X-rtd FITTER_NEW_CROSSING_ALGO " +  \
-                        "--toysNoSystematics  -t " + str(ntoys) + " --expectSignal 1.0 --saveToys  --rMin=-100 --rMax=100 -n _" + str(job) + " --seed=" + str(seed) +   \
+                        "--%s  -t "%(toy_gen) + str(ntoys) + " --expectSignal %f --saveToys --rMin=-100 --rMax=100 -n _"%(sig_strength) + str(job) + " --seed=" + str(seed) +   \
                         " " + gencard + "\n") 
                         toyname = "higgsCombine_" + str(job) + ".GenerateOnly.mH120." + str(seed) + ".root"
                         #run fit
@@ -210,11 +228,14 @@ def main():
                 #Add -S 0 below to disable systematics for FitDiagnostics: accomplished with 'syst'
                         jobfile.write("combine -M FitDiagnostics --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0" + \
                         " --X-rtd FITTER_NEW_CROSSING_ALGO -t " + str(ntoys)  + " --seed=" + str(seedf) + " -v " + str(verbosity) \
-                        + " --expectSignal=1.0 --robustFit=1 --rMin=-100 --rMax=100 --toysFile " + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
-                        " --setRobustFitTolerance 0.01 %s -d "%(syst) + fitcard + "\n")
-                       #mv the files from this call to eos.
-                        jobfile.write("mv higgsCombine_%d.GenerateOnly.mH120.%d.root %s\n"%(job, seed, newdir))
-                        jobfile.write("mv higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root %s\n"%(job, c, seedf, newdir))
+                        + " --expectSignal=%f --robustFit=1 --rMin=-100 --rMax=100 --toysFile "%(sig_strength) + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
+                    #only include --saveShapes option if it is specified.
+                        " --setRobustFitTolerance 0.01 %s %s -d "%(" --saveShapes " if saveShapes else "", syst) + fitcard + "\n")
+                       #mv the files from this call to eos (only need fitDiagnostics, not higgsCombine)
+                        #jobfile.write("mv higgsCombine_%d.GenerateOnly.mH120.%d.root %s\n"%(job, seed, newdir))
+                        #jobfile.write("mv higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root %s\n"%(job, c, seedf, newdir))
+                        jobfile.write("rm higgsCombine_%d.GenerateOnly.mH120.%d.root \n"%(job, seed))
+                        jobfile.write("rm higgsCombine_%d_%d.FitDiagnostics.mH120.%d.root \n"%(job, c, seedf))
                         jobfile.write("mv fitDiagnostics_%d_%d.root %s\n"%(job, c, newdir))
                 #Now move everything to eos (so afs storage space doesn't run out).
 #                jobfile.write("mv fitDiagnostics_" + str(job) + "_* " + newdir + "\n")
@@ -241,13 +262,14 @@ def main():
                 newdir = "/eos/user/b/bgreenbe/cat%d_%d%s%s_%s/job%d" %(catstart, catend, spec_name, gen_func, fit_func, job)
                 mvfile.write("mkdir " + newdir + "\n")
                 mvfile.write("mv fitDiagnostics_" + str(job) + "_* " + newdir + "\n")
-                mvfile.write("mv higgsCombine_" + str(job) + ".* " + newdir + "\n")
-                mvfile.write("mv higgsCombine_" + str(job) + "_* " + newdir + "\n")
+                mvfile.write("rm higgsCombine_" + str(job) + ".* \n") # + newdir + "\n")
+                mvfile.write("rm higgsCombine_" + str(job) + "_* \n") # + newdir + "\n")
                 #now rm all the higgsCombine files because they're useless.
-                mvfile.write("rm %s/higgsCombine*\n"%(newdir))
-        #now all that remains are the error .root files. Move these to the head.
-        mvfile.write("mv *.root " + new_head + "\n")
-        mvfile.write("mv *.dot " + new_head + "\n")
+                        #yeah so there was no need to move them in the first place
+#                mvfile.write("rm %s/higgsCombine*\n"%(newdir))
+        #now all that remains are the error .root files. Move these to the head. jk remove them.
+        mvfile.write("rm *.root \n") # + new_head + "\n")
+        mvfile.write("rm *.dot \n") #+ new_head + "\n")
         #rm any remaining roostats files (they're useless anyway)
         mvfile.write("rm roostats*\n")
         #only keep one copy of the executable files (to save space)
@@ -259,7 +281,7 @@ def main():
         mvfile.write("cp ~/public/plot_bias.py plots\n")
         mvfile.write("cd plots\n")
         #ntoys -1 means Asimov dataset.
-        mvfile.write("./plot_bias.py --CATS %d,%d --gen_func %s --fit_func %s --njobs %d --ntoys %d --ncalls %d %s\n"%(catstart, catend, gen_func, fit_func, njobs, abs(ntoys), ncalls, ("--dir " + spec_name if spec_name != "" else "")))
+        mvfile.write("./plot_bias.py --CATS %d,%d --gen_func %s --fit_func %s --njobs %d --ntoys %d --ncalls %d -e %f %s\n"%(catstart, catend, gen_func, fit_func, njobs, abs(ntoys), ncalls, sig_strength, ("--dir " + spec_name if spec_name != "" else "")))
         mvfile.close()
         #make it executable
         os.system("chmod +x mv_files.sh")
