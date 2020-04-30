@@ -185,6 +185,7 @@ def main():
                 jobfile.write("mkdir root\n")
                 jobfile.write("cp %s/root/data_shapes_workspace.root root\n"%(workdir))
                 jobfile.write("cp %s/root/sig_shapes_workspace.root root\n"%(workdir))
+                jobfile.write("cp %s/root/bkg_shapes_workspace.root root\n"%(workdir))
                 #there is no root file called bias_shapes_workspace_Pol.root
                 if not (gen_func == "Pol"):
                     jobfile.write("cp %s/root/bias_shapes_workspace_%s.root root\n"%(workdir, gen_func))
@@ -212,7 +213,8 @@ def main():
                 #generate toys
 #old way: --toysFrequentist instead of toysNoSystematics
                         jobfile.write("combine -M GenerateOnly --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0 --X-rtd FITTER_NEW_CROSSING_ALGO " +  \
-                        "--%s  -t "%(toy_gen) + str(ntoys) + " --expectSignal %f --saveToys --rMin=-100 --rMax=100 -n _"%(sig_strength) + str(job) + " --seed=" + str(seed) +   \
+#bpgballin recently added --cminDefaultMinimizerStrategy 0 2020/04/16
+                        "--%s  -t "%(toy_gen) + str(ntoys) + " --expectSignal %f --cminDefaultMinimizerStrategy 0 --saveToys --rMin=-100 --rMax=100 -n _"%(sig_strength) + str(job) + " --seed=" + str(seed) +   \
                         " " + gencard + "\n") 
                         toyname = "higgsCombine_" + str(job) + ".GenerateOnly.mH120." + str(seed) + ".root"
                         #run fit
@@ -227,7 +229,7 @@ def main():
 #                                sys.exit("Error: random seed out of range: %d. Please specify smaller (or larger) parameters so that the seed is between -2147483648 and 2147483647."%seed)
                 #Add -S 0 below to disable systematics for FitDiagnostics: accomplished with 'syst'
                         jobfile.write("combine -M FitDiagnostics --X-rtd FITTER_NEVER_GIVE_UP --X-rtd FITTER_BOUND --X-rtd ADDNLL_RECURSIVE=0" + \
-                        " --X-rtd FITTER_NEW_CROSSING_ALGO -t " + str(ntoys)  + " --seed=" + str(seedf) + " -v " + str(verbosity) \
+                        " --X-rtd FITTER_NEW_CROSSING_ALGO --cminDefaultMinimizerStrategy 0 -t " + str(ntoys)  + " --seed=" + str(seedf) + " -v " + str(verbosity) \
                         + " --expectSignal=%f --robustFit=1 --rMin=-100 --rMax=100 --toysFile "%(sig_strength) + str(toyname) + " -n _" + str(job) + "_" + str(c) +  \
                     #only include --saveShapes option if it is specified.
                         " --setRobustFitTolerance 0.01 %s %s -d "%(" --saveShapes " if saveShapes else "", syst) + fitcard + "\n")

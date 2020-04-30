@@ -80,7 +80,7 @@ def main():
     
 # Settings
     #set seven_cats true if want to discard cats 0 and 4.
-    seven_cats = True 
+    seven_cats = False #True 
 
     SC = opts.SC if not type(opts.SC)==str else SELsetup(opts.SC)
     TF = opts.TF
@@ -105,14 +105,17 @@ def main():
     fBKG = TFile.Open("%s/root/bkg_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag1),"read")
     fSIG = TFile.Open("%s/root/sig_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag1),"read")
     fDAT = TFile.Open("%s/root/data_shapes_workspace%s.root"%(opts.workdir,"" if not opts.long else longtag3),"read")
+    fbias = TFile.Open("%s/root/bias_shapes_workspace_%s.root"%(opts.workdir, opts.function),"read") #bpgballin
     wBKG = fBKG.Get("w")
     wSIG = fSIG.Get("w")
     wDAT = fDAT.Get("w")
+    wQCD = fbias.Get("w")
 
 # Load yields
     yD,yZ,yT,yVBF,yGF = [],[],[],[],[]
     for i in range(sum(SC.ncats)):
-        yD += [wDAT.var("yield_data_CAT%d"%i).getValV()]
+        #yD += [wDAT.var("yield_data_CAT%d"%i).getValV()] #bpgballin big change
+        yD += [wQCD.var("yield_QCD_CAT%d"%i).getValV()]  #the qcd rate is called yD for some reason.
         yZ += [wDAT.var("yield_ZJets_CAT%d"%i).getValV()]
         yT += [wDAT.var("yield_Top_CAT%d"%i).getValV()]
     #   for j,jmass in enumerate(range(115,140,5)):
@@ -195,7 +198,8 @@ def main():
         for i in CATS:
             fout.write("%-11s"%("%.2f"%yVBF[i][j]))
             fout.write("%-11s"%("%.2f"%yGF[i][j]))
-            fout.write("%-11d"%(yD[i]))
+            #fout.write("%-11d"%(yD[i]))
+            fout.write("%-11s"%("%.2f"%yD[i])) #bpgballin change
             fout.write("%-11s"%("%.2f"%yT[i]))
             fout.write("%-11s"%("%.2f"%yZ[i]))
             fout_table.write("CAT%d"%i)
@@ -237,7 +241,7 @@ def main():
         fout.write("-"*100+"\n")
   ## QCD part
         for i in CATS: 
-            fout.write("%-25s %-8s"%("CMS_vbfbb_qcd_norm_CAT%d_13TeV"%i,"lnU"))
+            fout.write("%-25s %-8s"%("#CMS_vbfbb_qcd_norm_CAT%d_13TeV"%i,"lnU"))
             for j in CATS: 
                 if i==j: fout.write("%-10s %-10s %-10s %-10s %-10s"%("-","-","%g"%uncertainties['qcd_norm'],"-","-"))
                 else:    fout.write("%-10s %-10s %-10s %-10s %-10s"%("-","-","-","-","-"))

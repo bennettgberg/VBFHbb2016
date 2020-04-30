@@ -97,14 +97,17 @@ else:
   rErrfile = open("rErr.txt", "w")
   #1000 toys separated into 100 jobs labeled 0-99, 10 combine calls
   for num in range(njobs):
-#    outname = "../cat%d_%d_%s_%s_%d.out"%(catstart, catend, gen_func, fit_func, num)
-    #check to make sure .out file exists (if not there was a problem so skip this job)
-  #  if not os.path.exists(outname):
-  #    print("Error! %s (output file) does not exist! Skipping job %d" %(outname, num))
-  #    continue
-  #  if os.path.exists(outname):
-#    outfile = open(outname)
-    #10 different combine calls
+    #name of the .err file
+    errname = "../cat%d_%d_%s_%s_%d.err"%(catstart, catend, gen_func, fit_func, num)
+    #check to make sure .err file exists (if not there was a problem so skip this job)
+    if not os.path.exists(errname):
+      print("Error! %s (error file) does not exist! Skipping job %d" %(errname, num))
+      continue
+    #open the error file for reading only.
+    errfile = open(errname, "r")
+    #read the 1st line (should be "Missing background...")
+    line = errfile.readline()
+  #  print("missing background line: %s"%line)
     #close then reopen the files every so often in case the process gets killed after 2 hours (fml)
     if num % 50 == 49:
         rfile.close()
@@ -112,7 +115,27 @@ else:
         rfile = open("r.txt", "a")
         rErrfile = open("rErr.txt", "a")
     for c in range(ncalls):
-  #    filename = "../fitDiagnostics_" + str(num) + "_" + str(c) + ".root"
+      line = errfile.readline() #should always be "Will make one..."
+  #    print("will make one line: %s"%line)
+      #read the error file until there's either a WARNING (skip this toy) or we get to "Missing background Model..." (the start of the next toy).
+      while "Missing" not in line and "WARNING" not in line:
+        line = errfile.readline()
+      #  print("line: %s"%line)
+        #the last call will reach the end of the file if no warning.
+        if not line:
+          break
+      #if it's a warning, skip this toy
+      if line and "WARNING" in line:
+        print("WARNING discovered for job %d call %d. Skipping call."%(num, c))
+        #now read the errfile until we get to the next call.
+        while "Missing" not in line:
+          line = errfile.readline()
+          #again could reach eof.
+          if not line:
+            break
+        #now can goto the next call.
+        continue
+      #if no warning was in the errfile then this is a valid toy.
       filename = "/eos/user/b/bgreenbe/cat%d_%d%s/%s_%s/job%d/fitDiagnostics_%d_%d.root" %(catstart, catend, spec_name, gen_func, fit_func, num, num, c)
       tfile = ROOT.TFile.Open(filename)
       if not tfile:
@@ -197,6 +220,10 @@ else:
             nevents += 1
       except:
           print("Error: new version of root or something stupid like that.")
+  #rfile didn't already exist loop
+  #if 0 valid events, delete the (empty) r and r.txt files.
+  if nevents == 0:
+    os.system("rm r.txt; rm rErr.txt")
 rfile.close()
 rErrfile.close()
 
