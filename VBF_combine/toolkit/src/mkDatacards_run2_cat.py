@@ -109,7 +109,7 @@ def main():
     wBKG = fBKG.Get("w")
     wSIG = fSIG.Get("w")
     wDAT = fDAT.Get("w")
-    wQCD = fbias.Get("w")
+    wQCD = fbias.Get("w") #bpgballin
 
 # Load yields
     yD,yZ,yT,yVBF,yGF = [],[],[],[],[]
@@ -152,7 +152,12 @@ def main():
  ## files
         if opts.bias : 
             fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","data_obs","../root",fname,"w:data_hist_$CHANNEL"))
-            fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%(''.join(opts.function))))
+            if ''.join(opts.TF) == "ConstPol1":
+                fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%(''.join(opts.function))))
+    #        elif (opts.CATS[0] == 0 or opts.CATS[0] == 4) and (opts.CATS[1] == 0 or opts.CATS[1] == 4):
+    #            fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%("POL3POL2")))
+            else:
+                fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qcd     ","../root",fname_bias,"w:qcd_model_%s_$CHANNEL"%(''.join(opts.TF))))
             fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","top     ","../root",fname,"w:Top_model_$CHANNEL"))
             fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","zjets   ","../root",fname,"w:Z_model_$CHANNEL"))
             fout.write("%-15s %-15s *   %s/%-30s %-30s\n"%("shapes","qqH_hbb     ","../root",sfname,"w:signal_model_m%s_$CHANNEL"%jmass))

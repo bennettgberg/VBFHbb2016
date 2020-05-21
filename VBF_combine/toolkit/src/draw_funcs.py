@@ -65,7 +65,7 @@ def style():
 
 #note: didn't delete the big blocks of commented code because with new method of getting Pol4/6 fits,
 #       have been unable to get error with it (well I get the error but it's nonsensical)
-def do_fits(my_cat=0, gen_func="Pol6", fit_func="Pol4"):
+def do_fits(my_cat=0, gen_func="Pol6", fit_func="Pol4", TF="ConstPol1"):
 #    style()
     #fBKG = TFile.Open("%s/root/bkg_shapes_workspace.root"%(workdir),"read")
     fBKG = TFile.Open("%s/root/data_shapes_workspace.root"%(workdir),"read")
@@ -152,8 +152,12 @@ def do_fits(my_cat=0, gen_func="Pol6", fit_func="Pol4"):
     zPDF = wBKG.pdf("Z_model_CAT%d"%C)
     tPDF = wBKG.pdf("Top_model_CAT%d"%C)
     #print("literally boutta get the qPDF4 ")
-    qPDF4= wqcd4.pdf("qcd_model_%s_CAT%d"%(fit_func, C))
-    qPDF6= wqcd6.pdf("qcd_model_%s_CAT%d"%(gen_func, C))
+    if TF == "ConstPol1":
+        qPDF4= wqcd4.pdf("qcd_model_%s_CAT%d"%(fit_func, C))
+        qPDF6= wqcd6.pdf("qcd_model_%s_CAT%d"%(gen_func, C))
+    else:
+        qPDF4= wqcd4.pdf("qcd_model_%s%s_CAT%d"%(TF, TF, C))
+        qPDF6= wqcd6.pdf("qcd_model_%s%s_CAT%d"%(TF, TF, C))
     #print("got 6 too")
     #qPDF4.Print()
     #qPDF6.Print()
@@ -350,7 +354,7 @@ def plot_64ratio(my_cat=0):
 #helper function to write avg,err in each bin to file
 #  format: bin_avg \t bin_err \n (for each of the numbins bins)
 #  used in get_toys()
-def write_avgs(filename, numbins, numtoys, totals, errs, zjets=[], top=[], ggH=[]):
+def write_avgs(filename, numbins, numtoys, totals, errs, zjets=[], top=[], ggH=[], qqH=[]):
     if numtoys == 0:
         sys.exit("Error: 0 valid toys.")
     store_file = open(filename, "w")
@@ -363,7 +367,8 @@ def write_avgs(filename, numbins, numtoys, totals, errs, zjets=[], top=[], ggH=[
             zjet_avg = zjets[i] / numtoys
             top_avg = top[i] / numtoys
             ggH_avg = ggH[i] / numtoys
-            store_file.write("%f\t%f\t%f\t%f\n"%(fin_avg, zjet_avg, top_avg, ggH_avg))
+            qqH_avg = qqH[i] / numtoys
+            store_file.write("%f\t%f\t%f\t%f\t%f\n"%(fin_avg, zjet_avg, top_avg, ggH_avg, qqH_avg))
     store_file.close()
 
 #to be called from within a try block
@@ -828,7 +833,7 @@ def toy_comp(my_cat=0, spec_name = "noSys_shapes"):
     can_name = "cat%d_toycomp_%s"%(my_cat, spec_name)
     return draw_plots(can_name, x_vals, points=points, curves=curves, pt_errs=errs, curve_names=curve_names, point_names=point_names) #y_range=[-1800,500])
 
-#get all the individual backgrounds from one toy
+#get all the individual backgrounds and signal from one toy
 def get_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", job=0, call=0):
    # tf = TFile.Open("%s/root/data_shapes_workspace.root"%(workdir),"read")
    # w = tf.Get("w")
@@ -839,11 +844,13 @@ def get_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", job=0,
     toy_Z = toy.Get("shapes_fit_s/CAT%d/zjets"%my_cat)
     toy_top = toy.Get("shapes_fit_s/CAT%d/top"%my_cat)
     toy_ggH = toy.Get("shapes_fit_s/CAT%d/ggH_hbb"%my_cat)
+    toy_qqH = toy.Get("shapes_fit_s/CAT%d/qqH_hbb"%my_cat)
     
     t_qcd = [0 for i in range(nbins)]
     t_Z = [0 for i in range(nbins)]
     t_top = [0 for i in range(nbins)]
     t_ggH = [0 for i in range(nbins)]
+    t_qqH = [0 for i in range(nbins)]
     nent_toy = 1200
     for i in range(1, nbins+1):
         n = (i-1)*(nent_toy/nbins) + (nent_toy/nbins)/2 + 1
@@ -851,8 +858,9 @@ def get_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", job=0,
         t_Z[i-1] = toy_Z.GetBinContent(n)
         t_top[i-1] = toy_top.GetBinContent(n)
         t_ggH[i-1] = toy_ggH.GetBinContent(n)
+        t_qqH[i-1] = toy_qqH.GetBinContent(n)
 #    print("done reading from toy file.")
-    return t_qcd, t_Z, t_top, t_ggH
+    return t_qcd, t_Z, t_top, t_ggH, t_qqH #added t_qqH recently!
 
 def handler():
     sys.exit(0)
@@ -865,6 +873,7 @@ def obtain_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", njo
     zjets= [0.0 for i in range(nbins)]
     top = [0.0 for i in range(nbins)]
     ggH = [0.0 for i in range(nbins)]
+    sig = [0.0 for i in range(nbins)]
     if os.path.exists(filename):
         print("reading from %s"%filename)
         #read from file
@@ -876,6 +885,7 @@ def obtain_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", njo
             zjets[n] = float(datums[1])
             top[n] = float(datums[2])
             ggH[n] = float(datums[3])
+            sig[n] = float(datums[4])
     else:
         print("reading from root files")
         fout = open(filename, "w")
@@ -883,23 +893,24 @@ def obtain_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", njo
         for job in range(njobs):
             for call in range(ncalls):
                 try:
-                    t_qcd, t_Z, t_top, t_ggH = get_toy_all(my_cat=my_cat, spec_name=spec_name, job=job, call=call, gen_func=gen_func, fit_func=fit_func)
+                    t_qcd, t_Z, t_top, t_ggH, t_qqH = get_toy_all(my_cat=my_cat, spec_name=spec_name, job=job, call=call, gen_func=gen_func, fit_func=fit_func)
                     for n in range(nbins):
                         qcd[n] += t_qcd[n]
                         zjets[n] += t_Z[n]
                         top[n] += t_top[n]
                         ggH[n] += t_ggH[n]
+                        sig[n] += t_qqH[n]
                     numtoys += 1
                 except:
                     signal(SIGINT, handler)
                     print("Error: could not read file for job %d, call %d"%(job, call))
             #periodically write results to output file in case of crash
             print("finished reading job %d out of %d"%(job+1, njobs))
-#            try:
-            if 0 == 0:
-                write_avgs(filename, nbins, numtoys, qcd, [], zjets=zjets, top=top, ggH=ggH)
-#            except:
-            else:
+            try:
+#            if 0 == 0:
+                write_avgs(filename, nbins, numtoys, qcd, [], zjets=zjets, top=top, ggH=ggH, qqH=sig)
+            except:
+#            else:
                 print("Warning: 0 valid toys in job %d"%job)
         #now that all the results are read, can do the final division by numtoys to get the averages.
         if numtoys == 0:
@@ -911,23 +922,26 @@ def obtain_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", njo
                 zjets[n] /= numtoys
                 top[n] /= numtoys
                 ggH[n] /= numtoys
-    return qcd, zjets, top, ggH
+                sig[n] /= numtoys
+    return qcd, zjets, top, ggH, sig
     
-def plot_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4"):
-    t_qcd, t_Z, t_top, t_ggH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
-    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func=gen_func, fit_func=fit_func)
+#this function plots the average Z and top for all toys vs the Z and top models.
+def plot_toy_all(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", TF="ConstPol1"):
+    t_qcd, t_Z, t_top, t_ggH, t_qqH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
+    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func=gen_func, fit_func=fit_func, TF=TF)
     #curves = [p4_dat, p6_dat, z_vals, t_vals, t_qcd, t_Z, t_top]
     curves = [ z_vals, t_vals, t_Z, t_top]
     curve_names = [ "Z model", "top model", "avg toy Z", "avg toy top"]
     can_name = "toy_Z_top_CAT%d_%s"%(my_cat, spec_name)
     return draw_plots(can_name, x_vals, curves=curves, curve_names=curve_names) #, y_range=[0, 62000])
 
-def plot_toy_full(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4"):
+#this function plots the differences bt pol4,5,6 models
+def plot_toy_full(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", sig_strength=1.0, TF="ConstPol1"):
     #get toy data
-    t_qcd, t_Z, t_top, t_ggH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
+    t_qcd, t_Z, t_top, t_ggH, t_qqH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
     #get model data
-    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol6", fit_func=fit_func)
-    x_vals, p4_dat, p4_err, p5_dat, p5_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol5", fit_func=fit_func)
+    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol6", fit_func="Pol4", TF=TF)
+    x_vals, p4_dat, p4_err, p5_dat, p5_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol5", fit_func="Pol4", TF=TF)
     #get signal models for gF and qqH
     g_vals = get_sig(my_cat, gf=True, vbf=False)
     s_vals = get_sig(my_cat, gf=False, vbf=True)
@@ -936,52 +950,57 @@ def plot_toy_full(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4"):
     totPol5 = [0 for i in range(nbins)]
     totPol6 = [0 for i in range(nbins)]
     for i in range(nbins):
-        tot_toy[i] = t_qcd[i] + t_Z[i] + t_top[i] + t_ggH[i]
-        totPol4[i] = p4_dat[i] + z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
-        totPol5[i] = p5_dat[i] + z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
-        totPol6[i] = p6_dat[i] + z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
+        tot_toy[i] = t_qcd[i] #+ t_Z[i] + t_top[i] + t_ggH[i] + t_qqH[i]
+        totPol4[i] = p4_dat[i] #+ z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
+        totPol5[i] = p5_dat[i] #+ z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
+        totPol6[i] = p6_dat[i] #+ z_vals[i] + t_vals[i] + g_vals[i] + s_vals[i]
     
         tot_toy[i] -= totPol4[i]
         totPol5[i] -= totPol4[i]
         totPol6[i] -= totPol4[i]
         datapt[i] -= totPol4[i]
         totPol4[i] = 0
+
+        s_vals[i] = sig_strength*(s_vals[i] + g_vals[i])
     
     #print("tot_toy: %s"%tot_toy)
     #print("totPol4: %s"%totPol4)
-    points = [] #[datapt]
+    points = [] #[s_vals] #[datapt]
     errs = [] #[daterr]
     curves = [tot_toy, totPol4, totPol5, totPol6]
-    point_names = ["data-Pol4model"]
-    curve_names = ["total toy(%s_%s)-Pol4model"%(gen_func, fit_func), "Pol4model-Pol4model", "Pol5model-Pol4model", "Pol6model-Pol4model"]
+    #point_names = ["data-Pol4model"]
+    point_names = ["signal model *%f"%sig_strength]
+    curve_names = ["toy fitted qcd(%s_%s)-Pol4model"%(gen_func, fit_func), "Pol4model-Pol4model", "Pol5model-Pol4model", "Pol6model-Pol4model"]
     can_name = "tot_toy_%s_%s_%s_v_mod_CAT%d"%(spec_name, gen_func, fit_func, my_cat)
-    return draw_plots(can_name, x_vals, points=points, pt_errs=errs, curves=curves, curve_names=curve_names, y_range=[-12, 12])
+    return draw_plots(can_name, x_vals, points=points, pt_errs=errs, curves=curves, curve_names=curve_names, y_range=[-15, 15])
 
-def plot_sigbois(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4"):
+def plot_sigbois(my_cat=0, spec_name="", gen_func="Pol6", fit_func="Pol4", sig_strength=1.0, TF="ConstPol1"):
     #get all models
-   # t_qcd, t_Z, t_top, t_ggH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
-    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol6", fit_func=fit_func)
+   # t_qcd, t_Z, t_top, t_ggH, t_qqH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
+    x_vals, p4_dat, p4_err, p6_dat, p6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol6", fit_func=fit_func, TF=TF)
 
-#whoops forgot to include signal in the toy_all thing haha
-    t_vbf = get_toys(my_cat, spec_name, sig=True, fit_func=fit_func, gen_func=gen_func)
+#whoops forgot to include signal in the toy_all thing haha----NOT HAHA YOU IDIOT YOU JUST WASTED A WHOLE HOUR OF MY TIME A$$HOLE - future you
+#    t_vbf = get_toys(my_cat, spec_name, sig=True, fit_func=fit_func, gen_func=gen_func)
+    t_qcd, t_Z, t_top, t_ggH, t_qqH = obtain_toy_all(my_cat=my_cat, spec_name=spec_name, gen_func=gen_func, fit_func=fit_func)
 
     #get full signal (vbf+gf)
-    s_vals = get_sig(my_cat)
+    s_vals = get_sig(my_cat, vbf=True, gf=False)
     totsig = [0 for i in range(nbins)]
     for i in range(nbins):
-        totsig[i] = t_vbf[i] #t_ggH[i] + 
+        totsig[i] = t_qqH[i]  #t_vbf[i] #t_ggH[i] + 
+        
+        s_vals[i] *= sig_strength
 
     points = [s_vals]
     curves = [totsig]                      
     point_names = ["signal model"]
-    curve_names = ["toy signal (%s_%s)"%(gen_func, fit_func)]
+    curve_names = ["toy fitted signal (%s_%s)"%(gen_func, fit_func)]
     can_name = "sig_%s_%s_%s_CAT%d"%(spec_name, gen_func, fit_func, my_cat)
-    return draw_plots(can_name, x_vals, points=points, point_names=point_names, curves=curves, curve_names=curve_names, y_range=[-18, 12])
+    return draw_plots(can_name, x_vals, points=points, point_names=point_names, curves=curves, curve_names=curve_names) #, y_range=[-1, 400])
     
 
 #plot difference between Pol6,Pol4; along with diff bt Pol5,Pol4 (along with signal model)
 def plot_qcddiff(my_cat=0):
-    #t_qcd, t_Z, t_top = get_toy_all(my_cat)
     x_vals, q4_dat, q4_err, q5_dat, q5_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol5", fit_func="Pol4")
     x_vals, q4_dat, q4_err, q6_dat, q6_err, datapt, daterr, z_vals, t_vals = do_fits(my_cat, gen_func="Pol6", fit_func="Pol4")
     sig_vals = get_sig(my_cat)
@@ -1009,12 +1028,15 @@ def plot_qcddiff(my_cat=0):
 
 def main():
     style()
-    my_cat = 2
+    my_cat = 5
     #special name of the directory to find the toy shapes
-    #spec_name = "noSys_shapes"
-    spec_name = "cminD0"
+   # spec_name = "noSys_shapes"
+    #spec_name = "cminD0"
     #spec_name = "preciseRate"
-#    spec_name = "expectSig0"
+    #spec_name = "perfNoSys"
+    #spec_name = "expectSig50"
+    #spec_name = "noSys50"
+    spec_name = "TFPOL1_shapes"
     #spec_name = "useBkg" 
     #path = plot_diffs(my_cat) #, "useBkg")
     #plot_zt_diff(my_cat, spec_name)
@@ -1027,9 +1049,9 @@ def main():
     #path = plot_sigdiff(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func)
 #    path = toy_comp(my_cat, spec_name)
     #open new pdf created
-    #path = plot_toy_all(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func)
-    #path = plot_toy_full(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func)
-    path = plot_sigbois(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func)
+    #path = plot_toy_all(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func, TF="POL1")
+    #path = plot_toy_full(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func, sig_strength=1.0, TF="POL1")
+    path = plot_sigbois(my_cat, spec_name, gen_func=gen_func, fit_func=fit_func, sig_strength=1.0, TF="POL1")
     os.system("evince %s"%path)
 
 if __name__=='__main__':
